@@ -9,3 +9,25 @@
 9. git merge vs git rebase (difference)
 10. Image rotation (AMD)
 11. Android Booting sequence
+12.Can destructors be private
+13. oneshot in init.rc
+14. PRODUCT_PACKAGES+= what it means in Android?
+15. Watchdog in Android and how it monitors ?
+16. Thread Starvation
+17. Single Threaded HALs
+18. Android Fence
+19. HIDL died-> How service will know it
+20. Binder Types
+21. ANR-> log analysis. What happens if we press OK or wait
+22. Dynamic loading of HALs
+23. Producer-Consumer problem and Deadlock
+24. Diff between HIDL and AIDL
+25. Versioned HALs
+26.Implementation of SystemService in Android
+27. Multiuser in Android
+28. One-way/two-way AIDL
+29. Boot phases in Android.
+30. Can a single handler will be associated with multiple threads? HandlerThread & Handlers Apis
+31. Execution sequence in init.rc
+32. Shutdown sequence in Android.
+
