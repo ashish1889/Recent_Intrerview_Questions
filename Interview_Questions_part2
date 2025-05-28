@@ -1,0 +1,154 @@
+pair<id,count>  -  store in set, lesser count then higher priority
+point()  - 5 radius
+x2 + y2 =r2
+
+
+
+#include <iostream>
+#include <set>
+
+// Define a struct to represent the pair
+struct Pair {
+    int id;
+    int count;
+
+    // Constructor to initialize the pair
+    Pair(int id, int count) : id(id), count(count) {}
+};
+
+// Custom comparator to sort pairs based on count in descending order
+struct Compare {
+    bool operator()(const Pair& a, const Pair& b) const {
+        return a.count > b.count;
+    }
+};
+
+int main() {
+    // Create a set with the custom comparator
+    std::set<Pair, Compare> pairSet;
+
+    // Insert pairs into the set
+    pairSet.insert(Pair(1, 5));
+    pairSet.insert(Pair(2, 3));
+    pairSet.insert(Pair(3, 8));
+    pairSet.insert(Pair(4, 2));
+    pairSet.insert(Pair(5, 6));
+
+    // Print the pairs in the set (sorted by count in descending order)
+    for (const auto& pair : pairSet) {
+        std::cout << "ID: " << pair.id << ", Count: " << pair.count << std::endl;
+    }
+
+    return 0;
+}
+
+
+ID: 3, Count: 8
+ID: 5, Count: 6
+ID: 1, Count: 5
+ID: 2, Count: 3
+ID: 4, Count: 2
+
+
+
+#include <iostream>
+#include <set>
+
+int main() {
+    // Create a set to store the pairs
+    std::set<std::pair<int, int>, std::greater<std::pair<int, int>>> pairSet;
+
+    // Insert pairs into the set
+    pairSet.insert({5, 1});
+    pairSet.insert({3, 2});
+    pairSet.insert({8, 3});
+    pairSet.insert({2, 4});
+    pairSet.insert({6, 5});
+
+    // Print the pairs in the set (sorted by count in descending order)
+    for (const auto& pair : pairSet) {
+        std::cout << "ID: " << pair.second << ", Count: " << pair.first << std::endl;
+    }
+
+    return 0;
+}
+
+
+ID: 3, Count: 8
+ID: 5, Count: 6
+ID: 1, Count: 5
+ID: 2, Count: 3
+ID: 4, Count: 2
+
+
+
+#include <iostream>
+#include <set>
+
+int main() {
+    // Create a set to store the pairs
+    std::set<std::pair<int, int>> pairSet;
+
+    // Insert pairs into the set
+    pairSet.insert({1, 5});
+    pairSet.insert({2, 3});
+    pairSet.insert({3, 8});
+    pairSet.insert({4, 2});
+    pairSet.insert({5, 6});
+
+    // Print the pairs in the set (sorted by id in ascending order)
+    for (const auto& pair : pairSet) {
+        std::cout << "ID: " << pair.first << ", Count: " << pair.second << std::endl;
+    }
+
+    return 0;
+}
+
+
+ID: 1, Count: 5
+ID: 2, Count: 3
+ID: 3, Count: 8
+ID: 4, Count: 2
+ID: 5, Count: 6
+
+
+#include <iostream>
+#include <cmath>
+using namespace std;
+
+// Function to draw a circle
+void drawCircle(int radius) {
+    int x, y;
+    for (y = -radius; y <= radius; y++) {
+        for (x = -radius; x <= radius; x++) {
+            if (x * x + y * y == radius * radius) {
+                cout << "* ";
+            } else {
+                cout << "  ";
+            }
+        }
+        cout << endl;
+    }
+}
+
+int main() {
+    int radius;
+    cout << "Enter the radius of the circle: ";
+    cin >> radius;
+    drawCircle(radius);
+    return 0;
+}
+
+
+Enter the radius of the circle: 5
+          *           
+    *           *     
+  *               *   
+                      
+                      
+*                   * 
+                      
+                      
+  *               *   
+    *           *     
+          *           
