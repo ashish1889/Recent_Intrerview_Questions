@@ -48,8 +48,60 @@ ID: 5, Count: 6
 ID: 1, Count: 5
 ID: 2, Count: 3
 ID: 4, Count: 2
+=====================================================================================================================================
+Here if it is asked that if count is equal then the one having smaller value of id will come first-
 
 
+#include <iostream>
+#include <set>
+
+// Define a struct to represent the pair
+struct Pair {
+    int id;
+    int count;
+
+    // Constructor to initialize the pair
+    Pair(int id, int count) : id(id), count(count) {}
+};
+
+// Custom comparator to sort pairs based on count in descending order
+struct Compare {
+    bool operator()(const Pair& a, const Pair& b) const {
+        if(a.count == b.count)
+        return a.id < b.id;
+        return a.count > b.count;
+    }
+};
+
+int main() {
+    // Create a set with the custom comparator
+    std::set<Pair, Compare> pairSet;
+
+    // Insert pairs into the set
+    pairSet.insert(Pair(1, 5));
+    pairSet.insert(Pair(2, 3));
+    pairSet.insert(Pair(3, 5));
+    pairSet.insert(Pair(4, 2));
+    pairSet.insert(Pair(5, 5));
+
+    // Print the pairs in the set (sorted by count in descending order)
+    for (const auto& pair : pairSet) {
+        std::cout << "ID: " << pair.id << ", Count: " << pair.count << std::endl;
+    }
+
+    return 0;
+}
+
+O/p:
+
+
+ID: 1, Count: 5
+ID: 3, Count: 5
+ID: 5, Count: 5
+ID: 2, Count: 3
+ID: 4, Count: 2
+
+========================================================================================================================================
 
 #include <iostream>
 #include <set>
