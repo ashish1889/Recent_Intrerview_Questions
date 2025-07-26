@@ -218,3 +218,57 @@ running function{
 unique_ptr<A> x;
 B.a = move(x);
 }
+
+
+Program-
+
+#include <iostream>
+#include <memory>
+using namespace std;
+
+class A{
+    public:
+    A(){
+        cout<<"A() Constructor called"<<endl;
+    }
+    ~A(){
+        cout<<"~A() Destructor  called"<<endl;
+    }
+};
+
+class B{
+    
+    public:
+    unique_ptr<A> a;
+    B(){
+        cout<<"B() Constructor called"<<endl;
+    }
+    ~B(){
+        cout<<"~B() Destructor  called"<<endl;
+    }
+};
+
+int main()
+{
+    unique_ptr<A> x = make_unique<A>();
+    B b;
+    b.a = move(x);
+    if(x == nullptr)
+    cout<<"move nulled"<<endl;
+    cout<<"Check before exit"<<endl;
+    //std::cout<<"Hello World";
+
+    return 0;
+}
+
+
+O/p-
+
+
+A() Constructor called
+B() Constructor called
+move nulled
+Check before exit
+~B() Destructor  called
+~A() Destructor  called
+
