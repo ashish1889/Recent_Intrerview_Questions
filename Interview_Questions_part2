@@ -454,5 +454,18 @@ int main() {
 static_assert(sizeof(X) > 0);
 static_assert(sizeof(Y) == sizeof(char)); // <-- here
 }
-
+========================================================================================================================================================================================
+e C++ language considers six member functions as special. ese functions will be automatically
+generated for your types unless you take steps to prevent it. ese are as follows:
+e default constructor: It’s probably the least special of all six, as it’s only implicitly generated if you write no constructor of
+your own.
+e destructor: is is called at the end of an object’s lifetime.
+e copy constructor: It is called when constructing an object with a single object of the same type as argument.
+e copy assignment: It is called when replacing the contents of an existing object with a copy of the contents of another object.
+e move constructor: It is called when constructing an object from a reference to an object one can move from. Examples of
+movable-from objects include objects one could not refer to anymore, such as the (anonymous) result of evaluating an
+expression or one being returned by a function. e program can also explicitly make an object movable-from with
+std::move().
+e move assignment: It behaves like copy assignment but is applied when the argument passed to the assignment operator is
+something one can move from.
 
