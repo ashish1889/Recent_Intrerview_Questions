@@ -325,4 +325,53 @@ X glob { "glob" };: This line creates a global object of type X named glob, init
 
 void g() {X xg{ "g()" }; }: This line declares a function g that creates a local object of type X named xg, initialized with the string "g()".
 
+==========================================================================================================================================================================
+
+class B; // forward declaration: there will be a class B
+         // at some point in the future
+void f(B*); // fine, we know what B is, even if we don't
+            // know the details yet, and all object
+            // addresses are of the same size
+
+// class D : B {}; // oops! To know what a D is, we have
+                   // to know how big a B is and what a
+                   // B object contains since a D is a B
+
+In that example, trying to de ne the D class would not compile. is is because in order to create a D
+object, the compiler needs to reserve enough space for a D object, but a D object is also a B object, and as
+such we cannot know the size of a D object without knowing the size of a B object.
+
+============================================================================================================================================================================
+
+char c;
+// a char occupies precisely one byte of storage, per
+// standard wording
+static_assert(sizeof c == 1); // for objects parentheses
+// are not required
+static_assert(sizeof(c) == 1); // ... but you can use them
+static_assert(sizeof(char) == 1); // for types, parentheses
+// are required
+struct Tiny {};
+// all C++ types occupy non-zero bytes of storage by
+// definition, even if they are "empty" like type Tiny
+static_assert(sizeof(Tiny) > 0);
+In the preceding example, the Tiny class is empty because it has no data member. A class could have
+member functions and still be empty. Empty classes that expose member functions are very commonly
+used in C++.
+A C++ object always occupies at least one byte of storage, even in the case of empty classes such as
+Tiny. at’s because if an object’s size was zero, that object could be at the same memory location as its
+immediate neighbor, which would be somewhat hard to reason about.
+===============================================================================================================================================================================
+
+e size reported by operator sizeof for objects of type signed char, unsigned char and char is 1, and the same
+goes for sizeof(std::byte) as each of these types can be used to represent a single byte.
+Expressions sizeof(short)>=sizeof(char) and sizeof(int)>=sizeof(short) will hold on all platforms,
+which means that there might be cases where sizeof(char) and sizeof(int) are both 1. In terms of width (i.e., bits
+used in the value representation) of fundamental types, the C++ standard limits itself to stating the minimum width for each type.
+e list can be found at [wg21.link/tab:basic.fundamental.width].
+As we have already said, expression sizeof(T)>0 holds for any type T. In C++, there are no zero-sized objects, not even
+objects of empty classes.
+e size occupied by an object of any struct or class cannot be less than the sum of the size of its data members (but there
+are caveats).
+
 
