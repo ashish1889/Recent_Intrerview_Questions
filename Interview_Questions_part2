@@ -272,3 +272,57 @@ Check before exit
 ~B() Destructor  called
 ~A() Destructor  called
 
+==================================================================================================================================================================================================
+
+
+#include <string>
+#include <iostream>
+#include <format>
+struct X {
+std::string s;
+X(std::string_view s) : s{ s } {
+std::cout << std::format("X::X({})\n", s);
+}
+~X(){
+std::cout << std::format("~X::X() for {}\n", s);
+}
+};
+X glob { "glob" };
+void g() {
+X xg{ «g()» };
+}
+int main() {
+X *p0 = new X{ "p0" };
+[[maybe_unused]] X *p1 = new X{ "p1" }; // will leak
+X xmain{ "main()" };
+g();
+delete p0;
+// oops, forgot delete p1
+}
+
+
+When executed, that program will print the following:
+X::X(glob)
+X::X(p0)
+X::X(p1)
+X::X(main())
+X::X(g())
+~X::X() for g()
+~X::X() for p0
+~X::X() for main()
+~X::X() for glob
+
+
+[[maybe_unused]] X *p1 = new X{ "p1" }; // will leak: This line dynamically allocates memory for another object of type X using new, 
+initializes it with the string "p1", and assigns the pointer to p1. The [[maybe_unused]] attribute indicates that the variable p1 might 
+not be used, and the comment suggests that this object will cause a memory leak because its memory is not deallocated.
+
+X(std::string_view s) : s{ s } {: This line declares a constructor for the struct X. The constructor takes a std::string_view parameter s and initializes the member variable s with it.
+
+std::cout << std::format("X::X({})\n", s);: This line prints a message to the console indicating that the constructor of X has been called, along with the string that was passed to it.
+
+X glob { "glob" };: This line creates a global object of type X named glob, initialized with the string "glob".
+
+void g() {X xg{ "g()" }; }: This line declares a function g that creates a local object of type X named xg, initialized with the string "g()".
+
+
