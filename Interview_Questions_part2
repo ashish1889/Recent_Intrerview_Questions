@@ -374,4 +374,47 @@ objects of empty classes.
 e size occupied by an object of any struct or class cannot be less than the sum of the size of its data members (but there
 are caveats).
 
+=================================================================================================================================================================================
+
+class X {};
+class Y {
+X x;
+};
+int main() {
+static_assert(sizeof(X) > 0);
+static_assert(sizeof(Y) == sizeof(X)); // <-- here
+}
+e line marked <-- here might be intriguing. Why would sizeof(Y) be equal to sizeof(X) if every
+Y object contains an X object? Remember that sizeof(X) is greater than 0 even though X is an empty
+class because every C++ object has to occupy at least one byte of storage. However, in the case of Y,
+which is not an empty class, each Y object already occupies storage due to its x data member. ere’s no
+reason to somewhat artificially add storage space to objects of that type.
+
+===================================================================================================================================================================================
+class X {
+char c;
+};
+class Y {
+X x;
+};
+int main() {
+static_assert(sizeof(X) == sizeof(char)); // <-- here
+static_assert(sizeof(Y) == sizeof(X)); // <-- here too
+}
+e same reasoning applies again: an object of type X occupies the same amount of storage space as its
+only data member (of type char), and an object of type Y occupies the same amount of storage space as
+its only data member (of type X).
+===================================================================================================================================================================================
+class X { };
+class Y {
+X x;
+char c;
+};
+int main() {
+static_assert(sizeof(Y) >= sizeof(char) + sizeof(X));
+}
+is is the rule we mentioned earlier but expressed formally for a speci c type. In this situation,
+supposing that sizeof(X)being equal to 1 is highly probable, one could even reasonably expect that
+sizeof(Y)would be equal to the sum of sizeof(char)and sizeof(X).
+
 
