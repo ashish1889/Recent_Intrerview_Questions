@@ -416,5 +416,43 @@ static_assert(sizeof(Y) >= sizeof(char) + sizeof(X));
 is is the rule we mentioned earlier but expressed formally for a speci c type. In this situation,
 supposing that sizeof(X)being equal to 1 is highly probable, one could even reasonably expect that
 sizeof(Y)would be equal to the sum of sizeof(char)and sizeof(X).
+====================================================================================================================================================================================
+
+class X { };
+class Y : X { // <-- private inheritance
+char c;
+};
+int main() {
+static_assert(sizeof(Y) == sizeof(char)); // <-- here
+}
+
+We moved from having an object of class X being a data member of Y to X being a base class of Y. is
+has an interesting consequence: since the base class X is empty, and since we know from de nition that
+objects of the derived class Y will occupy at least one byte of storage, the base class can be attened into
+the derived class for Y objects. is is a useful optimization called the empty base optimization. You
+can reasonably expect compilers to perform this optimization in practice, at least in the case of single
+inheritance relationships.
+Note that since the presence of an X in a Y is an implementation detail, not something that participates
+in the interface of class Y, we used private inheritance in this example. e empty base optimization
+would apply with public or protected inheritance too, but in this case, private inheritance preserves
+the fact that the X part of a Y is something that only the Y knows about.
+
+=====================================================================================================================================================================================
+
+Since C++20, if you think composition would be more appropriate than inheritance to describe the
+relation between two classes such as X and Y, you can mark a data member as [[no_unique_address]]
+to inform the compiler that this member, if it is an object of an empty class, does not have to occupy
+storage within the enclosing object. Compilers are not forced to comply, since attributes can be
+ignored, so make sure to verify that your chosen compilers implement this before writing code that
+relies on this:
+class X { };
+class Y {
+char c;
+[[no_unique_address]] X x;
+};
+int main() {
+static_assert(sizeof(X) > 0);
+static_assert(sizeof(Y) == sizeof(char)); // <-- here
+}
 
 
