@@ -291,3 +291,15 @@ If a destructor is marked noexcept(true), and it does throw an exception, the pr
 Exception Safety: This example illustrates the importance of writing exception-safe code. Destructors should ideally not throw exceptions (or be marked as noexcept(true) 
 if they are guaranteed not to throw). If they do, you need to be prepared to handle those exceptions gracefully.
 This kind of scenario can be very difficult to debug, and it's important to be aware of how exceptions interact with destructors and stack unwinding.
+================================================================================================================================================================================================
+
+void f() {
+A a; // a's ctor
+B b; // b's ctor
+{
+C c; // c's ctor
+} // c's dtor
+D d; // d's ctor
+} // d's dtor, b's dtor, a's dtor (in that order)
+… then the order of construction and destruction will be as noted in the comments: automatic objects
+in scope are destroyed in reverse order of construction, and nested scopes behave as expected.
