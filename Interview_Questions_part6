@@ -1,3 +1,25 @@
+class FileCloser { // perfectible, as we will see
+FILE * file;
+public:
+FileCloser(FILE *file) : file{ file } {
+}
+~FileCloser() {
+close_file(file);
+}
+};
+void f(const char *name) {
+FILE *file = open_file(name);
+if(!file) return; // failure
+FileCloser fc{ file }; // <-- fc manages file now
+vector<char> v;
+char buf[N]; // N is a positive integral constant
+for(int n = read_from(file, buf, N); n != 0;
+n = read_from(file, buf, N))
+v.insert(end(v), buf + 0, buf + n);
+process(v); // our processing function
+} // implicit close_file(file)
+
+=======================================================================================================================================================================================================================================
 void f(const char *name) {
 FILE *file = open_file(name);
 if(!file) return; // failure
