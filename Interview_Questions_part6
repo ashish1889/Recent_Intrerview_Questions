@@ -186,3 +186,10 @@ scoped_finalizer(F f) : f{ f } {
 f();
 }
 };
+==========================================================================================================================================================================================================================================
+
+After all, constructors can (and do!) throw exceptions. When a constructor throws, it means that the constructor cannot satisfy its postconditions: the object under construction was not constructed (the constructor did not complete!) 
+so that object does not exist.
+That’s a simple, working model.
+If a destructor throws… well, it’s probably the end of your program. Indeed, destructors are implicitly noexcept, which means that throwing from a destructor will call std::terminate() and that will be
+the end of your program.
