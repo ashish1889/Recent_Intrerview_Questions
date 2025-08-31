@@ -193,3 +193,101 @@ so that object does not exist.
 That’s a simple, working model.
 If a destructor throws… well, it’s probably the end of your program. Indeed, destructors are implicitly noexcept, which means that throwing from a destructor will call std::terminate() and that will be
 the end of your program.
+
+==================================================================================================================================================================================================
+
+Well, you might think, what if I explicitly mark my destructor as noexcept(false) then, thus
+overriding the default behavior? Well, this can work, but be careful as if a destructor throws during
+stack unwinding, such as what happens when an exception is already in ight, then this still calls
+std::terminate() and since you’ve been bad and have broken the rules, the compiler can optimize
+some of your code away. For example, in the following program it’s quite possible that neither "A\n"
+nor "B\n" will be printed even though the destructor of Evil has not been called at that point:
+#include <iostream>
+class Darn {};
+void f() { throw 3; }
+struct Evil {
+Evil() { std::cout << "Evil::Evil()\n"; }
+~Evil() noexcept(false) {
+std::cout << "Evil::~Evil()\n";
+throw Darn {};
+}
+};
+void g() {
+std::cout << "A\n";
+Evil e;
+std::cout << "B\n";
+f();
+std::cout << "C\n";
+}
+int main() {
+try {
+g();
+} catch(int) {
+std::cerr << "catch(int)\n";
+} catch(Darn) {
+std::cerr << "darn...\n";
+}
+}
+A probable result from this code can simply be that the program will display nothing at all, and some
+information to the eﬀect that throwing Darn has led to calling std::terminate() will be output.
+
+O/p on running on Online GDB-
+
+A
+Evil::Evil()
+B
+Evil::~Evil()
+terminate called after throwing an instance of 'Darn'
+
+Code Overview:
+
+The code defines a few key components:
+
+class Darn {};: A simple empty class representing a custom exception type.
+void f() { throw 3; }: A function that throws an integer (3) as an exception.
+struct Evil { ... }: A structure with a constructor and a destructor. Crucially, the destructor throws an exception (Darn). 
+The noexcept(false) specifier indicates that the destructor is not guaranteed not to throw exceptions.
+void g() { ... }: A function that attempts to create an Evil object, prints some messages, and then calls f(), which throws an exception.
+int main() { ... }: The main function, which calls g() inside a try...catch block to handle exceptions.
+Execution Flow & Explanation:
+
+int main() { ... }: The program starts in main().
+
+try { g(); } catch(int) { ... } catch(Darn) { ... }: The call to g() is wrapped in a try...catch block. This means that if any exception is thrown from within g(),
+the catch blocks will attempt to handle it.
+
+void g() { ... }:  g() is called.
+
+std::cout << "A\n";: "A" is printed to the console.
+Evil e;: An Evil object e is created. This calls the Evil constructor.
+std::cout << "Evil::Evil()\n";: "Evil::Evil()" is printed to the console.
+std::cout << "B\n";: "B" is printed to the console.
+f();: The function f() is called.
+void f() { throw 3; }: f() throws an integer exception (3).
+Exception Handling (The Tricky Part):
+
+The integer exception (3) thrown from f() is caught by the catch(int) block in main().
+std::cerr << "catch(int)\n";: "catch(int)" is printed to the console.
+However, the Evil object e was created before the exception was thrown. When the try block is exited due to the exception, the stack is unwound.
+This means that destructors for variables declared within the try block are called in the reverse order of their construction.
+Therefore, the destructor of e (the Evil object) is called.
+~Evil() noexcept(false) { ... }: The Evil destructor is executed.
+std::cout << "Evil::~Evil()\n";: "Evil::~Evil()" is printed to the console.
+throw Darn {};: The destructor itself throws an exception of type Darn!
+Another Exception!
+
+The Darn exception thrown from the destructor is not caught by the catch(int) block.
+The catch(Darn) block in main() catches the Darn exception.
+std::cerr << "darn...\n";: "darn..." is printed to the console.
+
+Key Takeaways:
+
+Destructors Can Throw Exceptions: This code demonstrates that destructors can, in fact, throw exceptions. 
+While it's generally considered bad practice (and can lead to program termination if not handled correctly), it is allowed.
+Exception Handling During Stack Unwinding: When an exception is thrown, the stack is unwound, and destructors are called. 
+If a destructor throws an exception itself, it can be caught by a catch block in the surrounding scope.
+noexcept Specifier: The noexcept(false) specifier on the Evil destructor explicitly states that the destructor might throw an exception. 
+If a destructor is marked noexcept(true), and it does throw an exception, the program will terminate immediately (usually by calling std::terminate).
+Exception Safety: This example illustrates the importance of writing exception-safe code. Destructors should ideally not throw exceptions (or be marked as noexcept(true) 
+if they are guaranteed not to throw). If they do, you need to be prepared to handle those exceptions gracefully.
+This kind of scenario can be very difficult to debug, and it's important to be aware of how exceptions interact with destructors and stack unwinding.
