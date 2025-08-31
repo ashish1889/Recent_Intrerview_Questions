@@ -164,3 +164,25 @@ In summary:
 
 This code provides a very clean and safe way to handle file resources. By using scoped_finalizer and a lambda expression, it guarantees that the file will be closed, even if errors occur during reading or processing. 
 This prevents resource leaks and makes the code more reliable.  The RAII principle is a cornerstone of modern C++ programming for robust resource management.
+
+===================================================================================================================================================================================================================================
+
+Consider now that the RAII idiom is mostly about resource management, as we associate the moment
+of destruction for an object with the act of releasing previously acquired resources. Numerous RAII
+objects (including classes FileCloser and scoped_finalizer in the preceding examples) can be said to
+be responsible for the resources we provide them with, which means that copying these objects could
+induce bugs (who would be responsible for the resources, the original or the copy?). us, consider
+deleting the copy operations for your RAII types unless you have a good reason to implement them
+explicitly:
+template <class F> class scoped_finalizer {
+F f;
+public:
+scoped_finalizer(const scoped_finalizer&) = delete;
+scoped_finalizer& operator=
+(const scoped_finalizer&) = delete;
+scoped_finalizer(F f) : f{ f } {
+}
+~scoped_finalizer() {
+f();
+}
+};
