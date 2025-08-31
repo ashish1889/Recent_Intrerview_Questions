@@ -303,3 +303,7 @@ D d; // d's ctor
 } // d's dtor, b's dtor, a's dtor (in that order)
 … then the order of construction and destruction will be as noted in the comments: automatic objects
 in scope are destroyed in reverse order of construction, and nested scopes behave as expected.
+
+============================================================================================================================================================================================
+Global objects are destroyed in reverse order of construction, but that order of construction is not always
+trivial to predict from our human perspective.
