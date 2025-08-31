@@ -1,3 +1,5 @@
+1. RAII example- FileCloser
+
 class FileCloser { // perfectible, as we will see
 FILE * file;
 public:
@@ -83,6 +85,8 @@ noexcept Consideration: Given that the catch block re-throws the exception, the 
 the internal exception handling might need to be different (e.g., logging the error and returning a failure status instead of re-throwing).
 
 ==========================================================================================================================================================================================================================================
+
+2. RAII example- scoped_finalizer
 
 
 template <class F> class scoped_finalizer { // simplified
