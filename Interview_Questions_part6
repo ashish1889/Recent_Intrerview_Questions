@@ -307,3 +307,60 @@ in scope are destroyed in reverse order of construction, and nested scopes behav
 ============================================================================================================================================================================================
 Global objects are destroyed in reverse order of construction, but that order of construction is not always
 trivial to predict from our human perspective.
+
+============================================================================================================================================================================================
+
+#include <iostream>
+#include <format>
+struct Verbose {
+int n;
+Verbose(int n) : n{ n } {
+    std::cout << std::format("Verbose({})\n", n);//std::format supported from C++ 20
+}
+~Verbose(){
+std::cout << std::format("~Verbose({})\n", n);
+}
+};
+class X {
+static inline Verbose v0 { 0 };
+Verbose v1{ 1 };
+};
+Verbose v2{ 2 };
+static void f() {
+static Verbose v3 { 3 };
+Verbose v4{ 4 };
+}
+static void g() { // note : never called
+static Verbose v5 { 5 };
+}
+int main() {
+Verbose v6{ 6 };
+{
+Verbose v7{ 7 };
+f();
+X x;
+}
+f();
+X x;
+}
+
+O/p-
+
+Verbose(0)
+Verbose(2)
+Verbose(6)
+Verbose(7)
+Verbose(3)
+Verbose(4)
+~Verbose(4)
+Verbose(1)
+~Verbose(1)
+~Verbose(7)
+Verbose(4)
+~Verbose(4)
+Verbose(1)
+~Verbose(1)
+~Verbose(6)
+~Verbose(3)
+~Verbose(2)
+~Verbose(0)
