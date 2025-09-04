@@ -111,6 +111,23 @@ return s;
 }
 };
 
+In this example, a string_mutator object’s function call operator accepts an arbitrary function f
+applicable to a char and that returns something that can be converted to a char, then applies f to each
+char in the sequence. For example, the following call would display "I LOVE MY INSTRUCTOR":
+
+// ...
+string_mutator sm{ "I love my instructor" };
+sm([](char c) {
+return static_cast<char>(std::toupper(c));
+});
+std::cout << sm.grab_snaphot();
+// ...
+Now, since string_mutator::operator()(F) accepts any function of the appropriate signature as
+argument, it could among other things accept a function that could throw an exception. Looking at
+the implementation of that operator, you will notice that with the current (naïve) implementation,
+this would lock m but never unlock it, a bad situation indeed.
+
+LLM explaination-
 
 This code defines a class called string_mutator that provides a thread-safe way to modify a string. Let's break down its components:
 
