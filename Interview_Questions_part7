@@ -1,0 +1,83 @@
+
+#include "Lib.h"
+#include <memory> // std::unique_ptr
+#include <Windows.h> // LoadLibrary, GetProcAddress
+
+int main() {
+  using namespace std;
+  HMODULE hMod = LoadLibrary(L"Lib.dll");
+  // suppose the signature of factory is in Lib.h
+  auto factory_ptr = reinterpret_cast<decltype(&factory)>(
+      GetProcAddress(hMod, "factory"));
+  std::unique_ptr<X> p{factory_ptr()};
+  p->f();
+  // delete p; // not needed anymore
+  FreeLibrary(hMod);
+} // p is destroyed here... but is this good?
+
+
+Explanation of the Code and Destruction
+
+Your code dynamically loads a library (Lib.dll), retrieves a function pointer to a factory function (factory), uses that factory to create an object of type X managed by a unique_ptr, calls a method f() on that object, 
+and finally unloads the library.
+
+The key part of your question relates to what happens when p (the unique_ptr) goes out of scope at the end of the main function.  That's where the crucial behavior of unique_ptr comes into play.
+
+How unique_ptr Ensures Proper Cleanup
+
+Ownership: The unique_ptr owns the dynamically allocated object of type X that was created by factory_ptr(). This means the unique_ptr is responsible for deleting the object when it is no longer needed.
+Destructor: The unique_ptr class has a destructor that is automatically called when the unique_ptr object itself goes out of scope (like at the end of main).
+Automatic Deletion: Within its destructor, the unique_ptr calls delete on the object it manages (the X object in this case). This is how the memory allocated for the X object is reclaimed.
+Is it Good? (Yes, it is!)
+
+Yes, this is very good and precisely the reason for using unique_ptr!  Leaving the deletion to the unique_ptr destructor offers several benefits:
+
+Exception Safety: If an exception is thrown after the object is created but before you could explicitly delete it, the unique_ptr destructor will still be called during stack unwinding. 
+This prevents a memory leak. Without unique_ptr, you’d need careful try...catch blocks to ensure deletion in all cases.
+Simplified Code: It avoids the need for manual memory management and explicit delete calls, reducing the risk of errors.
+Clear Ownership: It clearly expresses that the unique_ptr has exclusive ownership of the allocated object.
+In summary: The unique_ptr automatically handles the destruction of the dynamically allocated X object when it goes out of scope, even if exceptions occur. 
+This is a best practice for modern C++ memory management and helps prevent memory leaks and other issues.
+
+Additional Considerations:
+
+Lib.dll's Responsibility: It's important that the X object's destructor (if it has one) is properly implemented in the Lib.dll to release any resources held by the object before the memory is deallocated.
+Factory Function: Ensure that the factory function in Lib.dll is correctly allocating and returning a pointer to an object of type X.
+
+*************************************************Caveat to above implementation*************************************************************************************************************
+
+At first glance, this new version seems safer since p is now an RAII object responsible for the
+destruction of the pointee. Being destroyed at the closing brace of our main() function, we know that
+the destructor of the pointee will be called even if p->f() throws, so we consider ourselves more
+exception-safe than before…
+… except that this code crashes on that closing brace! If you investigate the source of the crash, you
+will probably end up realizing that the crash happens at the point where the destructor of p calls
+operator delete on the X* it has stored internally. Reading further, you will notice that the reason why
+this crash happens is that the library the object came from has been freed (call to FreeLibrary())
+before the destructor ran.
+Does that mean we cannot use an automated memory management tool here? Of course not, but we
+need to be more careful with the way in which we put object lifetime to contribution. In this example,
+we want to make sure that p is destroyed before the call to FreeLibrary() happens; this can be
+achieved through the simple introduction of a scope in our function:
+
+#include "Lib.h"
+#include <memory> // std::unique_ptr
+#include <Windows.h> // LoadLibrary, GetProcAddress
+int main() {
+using namespace std;
+HMODULE hMod = LoadLibrary(L"Lib.dll");
+// suppose the signature of factory is in Lib.h
+auto factory_ptr = reinterpret_cast<
+decltype(&factory)
+>(GetProcAddress(hMod, "factory"));
+{
+std::unique_ptr<X> p { factory_ptr() };
+p->f();
+} // p is destroyed here
+FreeLibrary(hMod);
+}
+In this speci c example, we could nd a simple solution; in other cases we might have to move some
+declarations around to make sure the scopes in which our objects nd themselves don’t alter the
+intended semantics of our function. Understanding the order in which objects are destroyed is
+essential to properly using this precious resource management facility that is the destructor.
+
