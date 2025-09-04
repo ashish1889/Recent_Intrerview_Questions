@@ -81,3 +81,86 @@ declarations around to make sure the scopes in which our objects nd themselves d
 intended semantics of our function. Understanding the order in which objects are destroyed is
 essential to properly using this precious resource management facility that is the destructor.
 
+===========================================================================================================================================================================================
+
+#include <thread>
+#include <mutex>
+#include <string>
+#include <algorithm>
+#include <string_view>
+class string_mutator {
+std::string text;
+mutable std::mutex m;
+public:
+// note: m in uncopiable so string_mutator
+// also is uncopiable
+string_mutator(std::string_view src)
+: text{ src.begin(), src.end() } {
+}
+template <class F> void operator()(F f) {
+m.lock();
+std::transform(text.begin(), text.end(),
+text.begin(), f);
+m.unlock();
+}
+std::string grab_snapshot() const {
+m.lock();
+std::string s = text;
+m.unlock();
+return s;
+}
+};
+
+
+This code defines a class called string_mutator that provides a thread-safe way to modify a string. Let's break down its components:
+
+1. Includes:
+
+#include <thread>: Includes the header for thread management (needed for concurrency).
+#include <mutex>: Includes the header for mutexes (used to protect shared data in a multithreaded environment).
+#include <string>: Includes the header for std::string (the string class).
+#include <algorithm>: Includes the header for standard algorithms like std::transform.
+#include <string_view>: Includes the header for std::string_view (a non-owning reference to a string).
+2. string_mutator Class:
+
+Private Members:
+
+std::string text;: This is the string that the string_mutator will manipulate. It stores the actual string data.
+mutable std::mutex m;: This is a mutex (mutual exclusion) object. It's used to protect the text member from concurrent access by multiple threads. 
+The mutable keyword is crucial here. It allows the mutex to be modified (locked/unlocked) even within const member functions like grab_snapshot().
+Public Members:
+
+Constructor: string_mutator(std::string_view src)
+
+Takes a std::string_view as input. std::string_view is an efficient way to pass a string without making a copy.
+Initializes the text member with a copy of the data from the string_view.
+operator()(F f) (Function Object/Functor)
+
+This overloads the function call operator (), making string_mutator a functor (an object that can be called like a function).
+template <class F> : This makes it a template, meaning it can work with any function object F (like a lambda or a regular function) that takes a character as input and returns a character.
+m.lock();: Acquires a lock on the mutex m. This ensures that only one thread can modify the text string at a time.
+std::transform(text.begin(), text.end(), text.begin(), f);: This is the core of the modification. std::transform applies the function f to each character in the text string 
+and updates the string in place.
+m.unlock();: Releases the lock on the mutex m, allowing other threads to access the string.
+std::string grab_snapshot() const
+
+This method provides a thread-safe way to get a copy of the current string without directly exposing the text member.
+m.lock();: Acquires a lock on the mutex.
+std::string s = text;: Creates a copy of the text string.
+m.unlock();: Releases the lock.
+return s;: Returns the copied string.
+Key Concepts:
+
+Thread Safety: The std::mutex ensures that the text string is only modified by one thread at a time, preventing race conditions and data corruption in multithreaded programs.
+Mutex (Mutual Exclusion): A synchronization primitive that prevents multiple threads from accessing a shared resource simultaneously.
+std::string_view: A non-owning reference to a string. It's more efficient than copying the entire string when you only need to read it.
+Functor (Function Object): An object that you can call like a function (by overloading the operator()).
+std::transform: A standard algorithm that applies a function to each element in a range and stores the results in another range (or in place).
+Use Cases:
+
+This class is useful in scenarios where you have a string that might be modified by multiple threads concurrently.  For example:
+
+A shared log string.
+A string buffer used for communication between threads.
+A string that's being built up incrementally by multiple threads.
+Important Note about Copying: The class itself is not copyable because the mutex m is not copyable. This prevents accidental data corruption if someone were to copy a string_mutator object.
