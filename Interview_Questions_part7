@@ -423,6 +423,75 @@ Inside it, the mutex m can still be locked/unlocked, because it’s declared mut
 The text itself stays read-only, so logical constness is preserved.
 ✅ Output of program:
 Hello, world
+=================================================================================================================
 
+[[nodiscard]] in C++17-
+
+1. What it is
+
+The [[nodiscard]] attribute is a compiler hint introduced in C++17.
+It tells the compiler:
+
+“If the return value of this function (or type) is ignored, give a warning.”
+
+2. Why it exists
+
+Think about a function that returns something important (like an error code, result of computation, or a smart pointer). If you accidentally ignore the return value, you may introduce bugs.
+
+Example without [[nodiscard]]:
+
+int divide(int a, int b) {
+    if (b == 0) return -1; // error code
+    return a / b;
+}
+
+void test() {
+    divide(4, 0); // Oops, ignored the return value -> possible bug!
+}
+
+The compiler won’t complain here. But if we mark it [[nodiscard]]:
+
+[[nodiscard]] int divide(int a, int b) {
+    if (b == 0) return -1;
+    return a / b;
+}
+
+void test() {
+    divide(4, 0); // ⚠️ compiler warning: ignoring return value
+}
+
+3. How it can be used
+
+On functions → discourages throwing away important return values.
+
+On types (struct/class/enum) → warns if an object of this type is created but not used.
+
+Example with a type:
+
+struct [[nodiscard]] ErrorCode {
+    int code;
+};
+
+ErrorCode check() { return {42}; }
+
+void foo() {
+    check(); // ⚠️ warning: ignoring a nodiscard value
+}
+
+
+4. Improvements after C++17
+
+C++20 added [[nodiscard("reason")]] so you can include a custom message:
+
+[[nodiscard("You must handle the result of check() to avoid resource leaks")]]
+bool check();
+
+✅ Quick summary:
+
+[[nodiscard]] = “don’t ignore this result.”
+
+Helps catch logic mistakes at compile-time.
+
+Can be applied to functions or types.
 
 
