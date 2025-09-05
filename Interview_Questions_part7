@@ -228,3 +228,201 @@ Clearly, using destructors to automate unlocking our mutex is advantageous for c
 simpli es code and helps make it exception-safe.
 
 
+Chatgpt explaination-
+
+
+1. What is the class doing?
+
+The class is called string_mutator. Its job is to store a string and allow safe modifications to it 
+from multiple threads, using a std::mutex.
+
+2. The data members
+
+std::string text;         // holds the actual string
+mutable std::mutex m;     // protects access to text
+
+text is the string we want to modify.
+m is a mutex that guards access. It’s marked mutable so even in const methods (like grab_snapshot) we can 
+still lock the mutex.
+
+3. Constructor
+
+string_mutator(std::string_view src)
+: text{ src.begin(), src.end() } {
+}
+
+This takes a std::string_view (a lightweight view of any string-like data) and copies its contents into text.
+
+4. The call operator operator()
+
+template <class F>
+void operator()(F f) {
+    std::lock_guard lck{ m };
+    std::transform(text.begin(), text.end(),
+                   text.begin(), f);
+} // lock_guard unlocks automatically here
+
+This lets you call the object like a function.
+
+It locks the mutex.
+
+It applies the function f to each character of text (via std::transform).
+
+It writes the results back into text.
+
+Example usage:
+string_mutator sm("Hello World");
+sm([](char c){ return std::toupper(c); }); 
+// text becomes "HELLO WORLD"
+
+5. The snapshot method
+
+std::string grab_snapshot() const {
+    std::lock_guard lck{ m };
+    return text;
+}
+
+This makes a copy of the string while holding the mutex, 
+so you get a consistent “snapshot” even if other threads are modifying it.
+
+6. Uncopyable nature
+
+The comment says:
+// note: m in uncopiable so string_mutator
+// also is uncopiable
+That’s true: std::mutex cannot be copied, so string_mutator also cannot be copied. 
+You could still move it, though, if needed.
+
+So overall:
+This class is a thread-safe wrapper around a string, where:
+operator() applies a transformation function to every character,
+grab_snapshot() returns a safe copy of the string at that moment.
+
+What’s the issue without mutable?
+Look at this method:
+std::string grab_snapshot() const {
+    std::lock_guard lck{ m };  // <-- tries to lock m
+    return text;
+}
+
+The method is marked const.
+
+That means the compiler assumes this method won’t modify any member variables.
+
+But std::mutex::lock() does modify the mutex’s state (it marks it as locked).
+
+So if m were not mutable, the compiler would say:
+❌ “Error: You can’t modify member m inside a const function.”
+
+Why mutable fixes it
+
+Declaring
+mutable std::mutex m;
+
+means:
+
+“Even if the object is logically const, it’s okay to change m.”
+
+That makes sense here, because locking a mutex is not a “logical modification” of the 
+string_mutator’s observable state — it’s just an implementation detail to ensure thread safety.
+
+So mutable is like saying:
+
+The string (text) must remain unchanged in a const method.
+
+The mutex state can change, because that doesn’t count as changing the object’s meaning.
+
+✅ In short:
+mutable is needed so that grab_snapshot() can be const (allowing you to safely take a snapshot of the string 
+from a const reference) while still locking the mutex inside.
+
+let’s simulate what happens if you remove mutable from the mutex.
+
+If we write the class like this (notice no mutable now):
+
+#include <thread>
+#include <mutex>
+#include <string>
+#include <algorithm>
+#include <string_view>
+
+class string_mutator {
+    std::string text;
+    std::mutex m;   // <-- not mutable
+public:
+    string_mutator(std::string_view src)
+    : text{ src.begin(), src.end() } {
+    }
+
+    std::string grab_snapshot() const {
+        std::lock_guard lck{ m };  // <-- problem here
+        return text;
+    }
+};
+
+When you try to compile this with g++, you’ll get an error like:
+
+error: binding reference of type ‘std::mutex&’ to ‘const std::mutex’ 
+       discards qualifiers
+   17 |         std::lock_guard lck{ m };
+      |                              ^
+
+🔎 What this means:
+
+Because the method is const, the compiler treats m as a const std::mutex.
+
+But std::lock_guard requires a non-const mutex reference (since it will lock/unlock it).
+
+The compiler refuses, because that would be modifying a supposedly const object.
+
+That’s why mutable is required. It tells the compiler: “It’s okay to modify this member even in a const function.”
+
+
+👉 Do you want me to also show how grab_snapshot() can then be safely called even on a const string_mutator&?
+
+Alright, let’s walk through it step by step.
+
+With mutable std::mutex m;
+
+#include <thread>
+#include <mutex>
+#include <string>
+#include <algorithm>
+#include <string_view>
+#include <iostream>
+
+class string_mutator {
+    std::string text;
+    mutable std::mutex m;   // <-- mutable is key
+public:
+    string_mutator(std::string_view src)
+    : text{ src.begin(), src.end() } {
+    }
+
+    std::string grab_snapshot() const {
+        std::lock_guard lck{ m };   // allowed now
+        return text;
+    }
+};
+
+int main() {
+    const string_mutator sm{"Hello, world"}; // note: sm is const
+    std::cout << sm.grab_snapshot() << "\n"; // works!
+}
+
+Why does this work?
+
+sm is declared const.
+
+Normally, that means only const methods can be called.
+
+grab_snapshot() is const, so it’s callable.
+
+Inside it, the mutex m can still be locked/unlocked, because it’s declared mutable.
+
+The text itself stays read-only, so logical constness is preserved.
+✅ Output of program:
+Hello, world
+
+
+
