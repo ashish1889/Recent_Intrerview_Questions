@@ -181,3 +181,50 @@ A shared log string.
 A string buffer used for communication between threads.
 A string that's being built up incrementally by multiple threads.
 Important Note about Copying: The class itself is not copyable because the mutex m is not copyable. This prevents accidental data corruption if someone were to copy a string_mutator object.
+
+============================================================================================================================================================================================
+
+In C++, there’s no need for such specialized support as robust code just ows from the fact that one could write an object
+that locks a mutex at construction time and unlocks it when destroyed… and that’s pretty much all we need. In C++, the simplest such type is 
+std::lock_guard<M>, where a simple implementation could look like:
+template <class M>
+class lock_guard { // simplified version
+M &m;
+public:
+lock_guard(M &m) : m { m } { m.lock(); }
+~lock_guard() { m.unlock(); }
+lock_guard(const lock_guard&) = delete;
+lock_guard& operator=(const lock_guard&) = delete;
+};
+The simplest types are open the best. Indeed, applying this type to our string_mutator example, we
+end up with a simpler, yet much more robust implementation:
+
+#include <thread>
+#include <mutex>
+#include <string>
+#include <algorithm>
+#include <string_view>
+class string_mutator {
+std::string text;
+mutable std::mutex m;
+public:
+// note: m in uncopiable so string_mutator
+// also is uncopiable
+string_mutator(std::string_view src)
+: text{ src.begin(), src.end() } {
+}
+template <class F> void operator()(F f) {
+std::lock_guard lck{ m };
+std::transform(text.begin(), text.end(),
+text.begin(), f);
+} // implicit m.unlock
+std::string grab_snapshot() const {
+std::lock_guard lck{ m };
+return text;
+} // implicit m.unlock
+};
+
+Clearly, using destructors to automate unlocking our mutex is advantageous for cases such as this: it
+simpli es code and helps make it exception-safe.
+
+
