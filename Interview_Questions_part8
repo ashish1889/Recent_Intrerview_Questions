@@ -1,0 +1,90 @@
+
+class entity {
+bool taken{ false };
+public:
+void take() { taken = true; }
+void release() { taken = false; }
+bool taken() const { return taken; }
+// ...
+};
+constexpr int N = ...;
+// entities is where the entity objects live. We did
+// not allocate them dynamically, but if we had we would
+// have used unique_ptr<entity> as this will be the
+// single last point of use for these objects
+array<entity,N> entities;
+class nothing_left{};
+// this function returns a non-owning pointer (Chapter 6
+// will cover more ergonomic options than a raw pointer)
+entity * borrow_one() {
+if(auto p = find_if(begin(entities), end(entities),
+[](auto && e) { return !e.taken(); };
+p != end(entities)) {
+p->take();
+return &(*p); // non-owning pointer
+}
+throw nothing_left{};
+}
+
+constexpr int N = ...;
+
+constexpr int N = ...;: This declares a constexpr (compile-time constant) integer variable named N. The constexpr keyword ensures that the value of
+N is known at compile time. The ... means that the specific value of N is not shown in this snippet but would be defined elsewhere in the code.
+This N likely represents the total number of entity objects that will be created.
+
+// entities is where the entity objects live...: This is a comment explaining the purpose of the next line, 
+stating that the entities variable is where the entity objects will be stored.
+array<entity,N> entities;: This declares an array named entities that can hold N objects of type entity. 
+This means that N entity objects will be created and stored contiguously in memory when this line is executed. 
+This is a fixed-size array, allocated on the stack. The comment mentions that if dynamic allocation were used (e.g., with new), unique_ptr<entity> 
+would be a good choice for managing the memory to prevent leaks.
+
+class nothing_left{};
+class nothing_left{};: This defines an empty class called nothing_left. This class is likely used as an exception type.
+It doesn't contain any members but serves as a marker to signal that no more entities are available.
+
+// this function returns a non-owning pointer (Chapter 6
+// will cover more ergonomic options than a raw pointer)
+entity * borrow_one() {
+if(auto p = find_if(begin(entities), end(entities),
+[](auto && e) { return !e.taken(); };
+p != end(entities)) {
+p->take();
+return &(*p); // non-owning pointer
+}
+throw nothing_left{};
+}
+
+
+entity * borrow_one() { ... }: This defines a function named borrow_one() that returns a pointer (entity *) to an entity object. The comment clarifies that this is a 
+non-owning pointer, meaning the function does not take responsibility for managing the lifetime of the pointed-to object.
+if(auto p = find_if(begin(entities), end(entities), [](auto && e) { return !e.taken(); }; p != end(entities)) { ... }: This is the core logic for finding an available 
+entity. Let's break it down:
+auto p = find_if(begin(entities), end(entities), [](auto && e) { return !e.taken(); });: This uses the std::find_if algorithm to search the entities array for an entity 
+that is not currently taken.
+begin(entities) and end(entities): These return iterators to the beginning and end of the entities array, respectively. find_if uses these to know where to search.
+[](auto && e) { return !e.taken(); }: This is a lambda expression that defines a predicate (a function that returns true or false). The lambda takes an entity object e 
+(using universal reference auto &&) and returns true if e.taken() is false (meaning the entity is available), and false otherwise.
+auto p = ...;: The find_if function returns an iterator to the first element that satisfies the predicate. If no such element is found, it returns end(entities). 
+The auto keyword automatically deduces the type of the iterator p.
+p != end(entities): This checks if find_if actually found an available entity. If p is not equal to end(entities), it means an available entity was found.
+p->take();: If an available entity was found (inside the if block), this line calls the take() method on the found entity (pointed to by p). This marks the entity as 
+"taken."
+return &(*p);: This returns a pointer to the "taken" entity.
+*p: Dereferences the iterator p to get the entity object itself.
+&(*p): Takes the address of the entity object, resulting in a pointer to the entity. This is a raw pointer.
+throw nothing_left{};: If find_if did not find an available entity (the if condition was false), this line throws an exception of type nothing_left. This signals to 
+the calling code that there are no more entities available to be borrowed.
+In Summary:
+
+The borrow_one() function attempts to find an available entity (one where taken is false). If it finds one, it marks it as taken and returns a pointer to it. 
+If no available entities are found, it throws a nothing_left exception. The returned pointer is non-owning, meaning the caller is responsible for not using it after 
+the entities array goes out of scope (or is modified in a way that the entity might be released).
+
+Important Note: As the code comment states, using raw pointers like this can be error-prone. Modern C++ often favors smart pointers (like unique_ptr or shared_ptr) 
+to manage memory and ownership more safely.
+
+==============================================================================================================================================================
+
+
+
