@@ -193,3 +193,31 @@ Important Considerations:
 Lifetime: The std::string_view doesn't own the data. Therefore, the underlying string data must remain valid for the lifetime of the std::string_view.
 If the underlying string is deallocated, the std::string_view will become a dangling reference. Be very careful about this, especially when working with temporary strings.
 Modification: You can't modify the string through a std::string_view.
+
+==================================================================================================================================================================================
+
+#include <memory>
+template <class T>
+
+bool point_to_same(const std::unique_ptr<T> &p0,
+const std::unique_ptr<T> &p1) {
+return p0 == p1;
+}
+template <class T>
+bool have_same_value(const std::unique_ptr<T> &p0,
+const std::unique_ptr<T> &p1) {
+return p0 && p1 && *p0 == *p1;
+}
+#include <cassert>
+int main() {
+// two distinct pointers to objects with same value
+std::unique_ptr<int> a{ new int { 3 } };
+std::unique_ptr<int> b{ new int { 3 } };
+assert(point_to_same(a, a) && have_same_value(a, a));
+assert(!point_to_same(a, b) && have_same_value(a, b));
+}
+
+sizeof(unique_ptr<T>)==sizeof(T*) with a few exceptions that will be
+discussed later in this chapter. is means that there’s generally no cost in terms of memory space to
+using a smart pointer instead of a raw pointer. In other words, by default, the only state found in a
+unique_ptr<T> object is T*.
