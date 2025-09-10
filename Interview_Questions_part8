@@ -86,5 +86,21 @@ to manage memory and ownership more safely.
 
 ==============================================================================================================================================================
 
-
+// ...
+// dynamically create an X or something derived from
+// X and return it without risk of a leak
+unique_ptr<X> factory(args);
+// pass-by-value which means in practice pass-by-movement
+// since unique_ptr is uncopiable
+unique_ptr<X> borrowing(unique_ptr<X>);
+// pass-by-reference to allow mutating the pointee. In
+// practice, X* would be a better choice here
+void possible_mutation(unique_ptr<X>&);
+// pass by reference-to-const to consult the pointee but
+// not mutate it. In practice, prefer const X* here
+void consult(const unique_ptr<X>&);
+// sink() consumes the object passed as argument : gets
+// in, never gets out. This could use pass-by-value but
+// intent is probably clearer with a rvalue-reference
+void sink(unique_ptr<X> &&);
 
