@@ -124,4 +124,72 @@ g(p.get());
 unique_ptr<T> is also movable – a moved-from unique_ptr<T> behaves like a null pointer, as the
 movement for this type semantically implements a transfer of ownership. is makes it simpler to
 implement various types that need to manage resources indirectly.
+=================================================================================================================================================================================
 
+std::string_view:
+
+It's a really useful feature introduced in C++17.  Here's a breakdown of what it is, why you'd use it, and some examples.
+
+What is std::string_view?
+
+std::string_view is a lightweight, non-owning view of a contiguous sequence of characters.  Think of it as a way to look at a portion of a string without copying the string data itself.  
+It's essentially a pointer to a character sequence along with a size.
+
+Why use std::string_view?
+
+Efficiency: The biggest advantage is avoiding unnecessary string copies. When you pass a std::string by value to a function, a copy of the entire string is created. 
+std::string_view avoids this overhead, making it much faster when you only need to read string data.
+Flexibility: It can refer to substrings of std::string objects, C-style strings (character arrays), or any other contiguous character sequences.
+Read-Only: std::string_view doesn’t provide methods for modifying the underlying string data. This helps prevent accidental modifications to the original string.
+Const Correctness: It naturally encourages const-correctness (good practice!).
+How to use it (with examples):
+
+#include <iostream>
+#include <string>
+#include <string_view>
+
+void print_substring(std::string_view str) {
+  std::cout << "Substring: " << str << std::endl;
+  std::cout << "Length: " << str.length() << std::endl;
+}
+
+int main() {
+  std::string my_string = "Hello, world!";
+
+  // Create a string_view from a std::string
+  std::string_view view1 = my_string;
+  print_substring(view1);
+
+  // Create a string_view from a substring
+  std::string_view view2 = my_string.substr(7, 5); // "world"
+  print_substring(view2);
+
+  // Create a string_view from a C-style string
+  const char* c_string = "This is a C-string.";
+  std::string_view view3 = c_string;
+  print_substring(view3);
+
+  return 0;
+}
+
+O/p:
+
+
+Substring: Hello, world!
+Length: 13
+Substring: world
+Length: 5
+Substring: This is a C-string.
+Length: 19
+
+
+Explanation:
+
+print_substring takes a std::string_view as input. Notice no copying happens when you pass view1, view2, or view3 to this function.
+my_string.substr(7, 5) creates another std::string_view representing a portion of the original string.
+We initialize view3 directly from a const char*.
+Important Considerations:
+
+Lifetime: The std::string_view doesn't own the data. Therefore, the underlying string data must remain valid for the lifetime of the std::string_view.
+If the underlying string is deallocated, the std::string_view will become a dangling reference. Be very careful about this, especially when working with temporary strings.
+Modification: You can't modify the string through a std::string_view.
