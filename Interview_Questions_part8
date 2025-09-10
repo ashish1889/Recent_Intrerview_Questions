@@ -103,4 +103,25 @@ void consult(const unique_ptr<X>&);
 // in, never gets out. This could use pass-by-value but
 // intent is probably clearer with a rvalue-reference
 void sink(unique_ptr<X> &&);
+==============================================================================================================================================================================
+A unique_ptr<T> object is non-copyable, as its copy constructor and copy assignment member
+functions are marked as deleted. at’s why g() in the rst example of the Type unique_ptr section
+takes its argument by reference – g() shares the pointee with the caller but does not take ownership of it. We could also have expressed g() as taking X* as an argument, 
+with the contemporary acceptance
+that function arguments that are raw pointers are meant to model using a pointer but without
+owning it:
+#include <memory>
+class X {
+// ...
+};
+std::unique_ptr<X> f();
+void g(X*);
+void h() {
+// we could write std::unique_ptr<X> instead of auto
+auto p = f();
+g(p.get());
+} // p implicitly releases the pointed-to X object here
+unique_ptr<T> is also movable – a moved-from unique_ptr<T> behaves like a null pointer, as the
+movement for this type semantically implements a transfer of ownership. is makes it simpler to
+implement various types that need to manage resources indirectly.
 
