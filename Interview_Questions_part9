@@ -1,0 +1,236 @@
+There are indeed many situations where applying
+operator delete on a pointer to destroy the pointed-to object is not an option:
+Sometimes, T::~T() is private or protected , making it inaccessible to other classes such as unique_ptr<T> .
+Sometimes, the nalization semantics require doing something else than calling delete – for example, calling a destroy()
+or release() member function
+Sometimes, the expectation is to call a free function that will perform auxiliary work in addition to freeing a resource.
+
+template<class T, class D = std::default_delete<T>>
+class unique_ptr {
+    // ...
+};
+
+unique_ptr is a smart pointer that owns a dynamically allocated object.
+
+It takes two template parameters:
+
+T → the type of the object it manages
+
+D → the "deleter" (what to do when the unique_ptr is destroyed).
+
+If you don’t specify a deleter, it uses std::default_delete<T>.
+
+So D is customizable, but by default it’s just "delete the pointer".
+
+2. What is default_delete<T>?
+
+template<class T>
+struct default_delete {
+    constexpr default_delete() noexcept = default;
+
+    constexpr void operator()(T* p) const {
+        delete p;
+    }
+};
+
+This is a function object (functor):
+
+It has operator(), so it can be "called like a function".
+
+If you pass it a T*, it will do delete p.
+
+Marked constexpr and noexcept because deletion is simple, and this allows more optimizations.
+
+Think of it like a small struct whose only job is to delete a pointer:
+
+default_delete<int> d;
+int* p = new int(42);
+d(p);   // calls delete p;
+
+
+3. How unique_ptr uses it
+
+When a unique_ptr<T> goes out of scope:
+
+It checks if it owns a pointer ptr.
+
+If yes, it calls the deleter: D{}(ptr).
+
+By default, that’s default_delete<T>()(ptr) → which is just delete ptr;.
+
+Example:
+
+std::unique_ptr<int> up(new int(5));
+// when up goes out of scope -> calls default_delete<int>()(ptr)
+
+4. Why not just delete inside unique_ptr?
+
+Because we want flexibility.
+With a custom deleter, you could:
+
+Use free() instead of delete.
+
+Call fclose() for a FILE*.
+
+Log something before deleting.
+
+Example:
+
+struct FreeDeleter {
+    void operator()(int* p) const { std::free(p); }
+};
+
+std::unique_ptr<int, FreeDeleter> ptr((int*)std::malloc(sizeof(int)));
+
+✅ Summary:
+
+default_delete<T> is a little callable struct that just says: “when called with a T*, run delete p.”
+
+unique_ptr uses it by default to clean up its resource.
+
+But you can plug in your own deleter if needed.
+
+==========================================================================================================================================
+let’s do a “play-by-play” of what happens when a std::unique_ptr<int> goes out of scope.
+
+#include <memory>
+#include <iostream>
+
+int main() {
+    std::unique_ptr<int> up(new int(42));
+    // work with up...
+} // <- scope ends here
+
+Step 1: Construction
+
+new int(42) allocates an int on the heap and returns a raw pointer (say 0x1234).
+
+std::unique_ptr<int> stores this pointer inside itself.
+
+Since we didn’t provide a deleter, it uses the default one:
+
+using deleter_type = std::default_delete<int>;
+
+Step 2: Scope ends
+
+When execution leaves the main() function:
+
+The destructor ~unique_ptr() is called.
+
+The destructor looks roughly like:
+
+~unique_ptr() {
+    if (ptr != nullptr) {
+        deleter(ptr);
+    }
+}
+(where deleter is a default_delete<int>).
+
+Step 3: Call the deleter
+
+deleter(ptr) is shorthand for:
+default_delete<int>::operator()(ptr);
+
+That means it goes into default_delete and calls:
+
+void operator()(int* p) const {
+    delete p;
+}
+
+Step 4: Delete the memory
+
+delete ptr; calls the destructor of the object (int in this case, trivial)
+
+Then frees the heap memory at 0x1234.
+
+At this point, the resource is cleaned up automatically.
+
+Step 5: Done
+
+No memory leaks, no dangling resources. 🎯
+
+===========================================================================================================================================
+
+#include <memory>
+class requires_dynamic_alloc {
+~requires_dynamic_alloc() = default; // private
+// ...
+friend struct cleaner;
+};
+// ...
+struct cleaner {
+template <class T>
+void operator()(T *p) const { delete p; }
+};
+int main() {
+using namespace std;
+// requires_dynamic_alloc r0; // no
+//auto p0 = unique_ptr<requires_dynamic_alloc>{
+//
+new requires_dynamic_alloc
+//}; // no, as delete not available to default deleter
+auto p1 = unique_ptr<requires_dynamic_alloc, cleaner>{
+new requires_dynamic_alloc
+}; // ok, will use cleaner::operator() to delete pointee
+}
+
+Step 1. The class with restricted destructor
+
+class requires_dynamic_alloc {
+    ~requires_dynamic_alloc() = default; // private
+    friend struct cleaner;
+};
+
+~requires_dynamic_alloc() is declared private.
+→ This means ordinary code (like in main) cannot call delete or let it go out of scope as an automatic variable.
+
+So requires_dynamic_alloc r0; is illegal — the destructor is inaccessible.
+
+But friend struct cleaner; is declared.
+→ cleaner has permission to access the private destructor.
+
+Step 2. The custom deleter
+struct cleaner {
+    template <class T>
+    void operator()(T* p) const { delete p; }
+};
+
+This is a function object that unique_ptr can use to clean up its resource.
+
+Since cleaner is a friend of requires_dynamic_alloc, it can call the private destructor through delete.
+
+Step 3. Why default_delete doesn’t work
+
+Normally, unique_ptr<T> uses std::default_delete<T> as the deleter:
+
+template <class T>
+struct default_delete {
+    void operator()(T* p) const { delete p; }
+};
+
+But default_delete is not a friend of requires_dynamic_alloc.
+So if you try:
+auto p0 = std::unique_ptr<requires_dynamic_alloc>{ new requires_dynamic_alloc };
+
+then default_delete<requires_dynamic_alloc> tries to call delete, but it’s not allowed to access the private destructor → compile error.
+
+Step 4. The working case
+
+auto p1 = std::unique_ptr<requires_dynamic_alloc, cleaner>{
+    new requires_dynamic_alloc
+};
+
+Here:
+
+cleaner is a friend, so it can legally call the private destructor.
+
+So when p1 goes out of scope, cleaner::operator() runs and does delete p.
+
+This allows controlled dynamic allocation and deletion.
+
+✅ Big picture:
+
+This pattern enforces that objects of requires_dynamic_alloc can only be heap-allocated and only managed by a smart pointer (with an approved deleter).
+
+It prevents accidental stack allocation or raw deletes.
+
