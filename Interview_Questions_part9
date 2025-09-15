@@ -1,9 +1,11 @@
 There are indeed many situations where applying
 operator delete on a pointer to destroy the pointed-to object is not an option:
 Sometimes, T::~T() is private or protected , making it inaccessible to other classes such as unique_ptr<T> .
-Sometimes, the nalization semantics require doing something else than calling delete – for example, calling a destroy()
+Sometimes, the nalization semantics require doing something else than calling delete – for example, calling a 
+destroy()
 or release() member function
-Sometimes, the expectation is to call a free function that will perform auxiliary work in addition to freeing a resource.
+Sometimes, the expectation is to call a free function that will perform auxiliary work in addition to freeing a 
+resource.
 
 template<class T, class D = std::default_delete<T>>
 class unique_ptr {
@@ -212,7 +214,8 @@ But default_delete is not a friend of requires_dynamic_alloc.
 So if you try:
 auto p0 = std::unique_ptr<requires_dynamic_alloc>{ new requires_dynamic_alloc };
 
-then default_delete<requires_dynamic_alloc> tries to call delete, but it’s not allowed to access the private destructor → compile error.
+then default_delete<requires_dynamic_alloc> tries to call delete, but it’s not allowed to access the 
+private destructor → compile error.
 
 Step 4. The working case
 
@@ -230,7 +233,189 @@ This allows controlled dynamic allocation and deletion.
 
 ✅ Big picture:
 
-This pattern enforces that objects of requires_dynamic_alloc can only be heap-allocated and only managed by a smart pointer (with an approved deleter).
+This pattern enforces that objects of requires_dynamic_alloc can only be heap-allocated and only managed by 
+a smart pointer (with an approved deleter).
 
 It prevents accidental stack allocation or raw deletes.
+============================================================================================================
 
+#include <memory>
+struct releasable {
+void release() {
+// overly simplified for the sake of this example
+delete this;
+}
+protected:
+~releasable() = default;
+};
+class important_resource : public releasable {
+// ...
+};
+void release(releasable *p) {
+if(p) p->release();
+}
+int main() {
+using namespace std;
+auto p = unique_ptr<important_resource,
+void(*)(releasable*)>{
+new important_resource, release
+}; // ok, will use release() to delete pointee
+}
+
+
+Nice — you’ve brought in another smart-pointer/deleter pattern, 
+this time using a release() member. Let’s break it down step by step.
+
+1. The base class with a protected destructor
+
+struct releasable {
+    void release() {
+        // overly simplified
+        delete this;
+    }
+protected:
+    ~releasable() = default;
+};
+
+~releasable() is protected, not public.
+
+That means normal code cannot delete p; if p is a pointer to releasable or its subclasses.
+
+This protects against accidental deletion by non-friends / non-members.
+
+Instead, releasable provides a public member function release() that does delete this;.
+
+So the object can destroy itself safely, but only if the caller uses the correct interface.
+
+2. The derived class
+
+class important_resource : public releasable {
+    // ...
+};
+
+important_resource inherits the protected destructor from releasable.
+
+Same rule applies: you can’t just delete an important_resource* in outside code.
+
+3. Free function release
+
+void release(releasable* p) {
+    if (p) p->release();
+}
+
+This is just a helper function that forwards to p->release().
+
+It becomes handy as a function pointer deleter.
+
+
+4. The smart pointer
+
+auto p = unique_ptr<important_resource,
+    void(*)(releasable*)>{
+        new important_resource, release
+};
+
+unique_ptr has two template parameters:
+unique_ptr<T, Deleter>.
+Here:
+
+T = important_resource
+
+Deleter = void(*)(releasable*) (a function pointer type)
+
+When p goes out of scope:
+
+The release function is called on the stored pointer.
+
+release() then calls the release() member on the object.
+
+That deletes the object through delete this;
+
+
+✅ Big picture
+
+This is another way to control object lifetime:
+
+Objects can’t be destroyed directly (destructor protected).
+
+They must be destroyed via the controlled release() path.
+
+By giving unique_ptr a custom deleter (the free release function), you integrate this pattern with RAII.
+
+
+What’s the difference between the first pattern you showed me (using a friend deleter) and this 
+one (using a release() member)?
+Why might a library author prefer this release() style instead of the friend approach?
+
+Perfect — let’s put the two side by side, and tease apart the difference.
+
+🔹 Pattern 1 (your first code with friend cleaner)
+
+class requires_dynamic_alloc {
+    ~requires_dynamic_alloc() = default; // private
+    friend struct cleaner;
+};
+
+struct cleaner {
+    template<class T>
+    void operator()(T* p) const { delete p; }
+};
+
+
+Destructor is private.
+
+Only the cleaner functor can call delete p;.
+
+So the lifetime is controlled through unique_ptr<T, cleaner>.
+
+Key idea: Only “trusted” deleters (friends) are allowed to destroy the object.
+
+🔹 Pattern 2 (your second code with releasable)
+
+struct releasable {
+    void release() { delete this; }
+protected:
+    ~releasable() = default;
+};
+
+
+Destructor is protected.
+
+You can’t delete p; directly from outside.
+
+Instead, the object teaches itself how to be destroyed: you must call p->release().
+
+A custom deleter for unique_ptr just forwards to that release function.
+
+Key idea: Destruction happens through the object’s own interface, not through a friend.
+
+🔹 So, what’s the real difference?
+
+Friend deleter style
+
+External function/object (cleaner) is trusted to delete.
+
+More encapsulated: the object itself doesn’t expose a delete this call.
+
+Slightly safer — no chance of misuse like double-calling release().
+
+But you need to wire up the friend relationship.
+
+Release() style
+
+The object itself defines how it can be destroyed.
+
+Any code that has a pointer to releasable can call release().
+
+Simpler to set up (no friend declarations).
+
+But a little riskier: if someone calls p->release() manually while a unique_ptr still exists, 
+you could get a double-delete.
+
+✅ Big-picture summary
+
+Both patterns stop accidental raw deletes and force you to use a controlled destruction path.
+
+Friend deleter = outsider does cleanup, but only if trusted.
+
+Release method = object deletes itself when asked.
