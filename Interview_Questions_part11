@@ -1,0 +1,214 @@
+#include <type_traits>
+namespace managing_memory_book {
+// ...
+template <class T>
+struct is_deleter_function_candidate
+: std::false_type {};
+template <class T>
+struct is_deleter_function_candidate<void (*)(T*)>
+: std::true_type {};
+template <class T>
+constexpr auto is_deleter_function_candidate_v =
+is_deleter_function_candidate<T>::value;
+// ...
+}
+
+
+This code defines a type trait to check if a given type is a function pointer suitable for use as a deleter (likely in the context of smart pointers).
+#include <type_traits>
+#include <type_traits>: This line includes the <type_traits> header file. This header provides a collection of powerful tools for compile-time introspection and
+manipulation of types. These tools help in writing more generic and robust C++ code.
+
+namespace managing_memory_book {
+// ...
+}
+
+namespace managing_memory_book { ... }: This creates a namespace called managing_memory_book. 
+Namespaces are used to organize code and prevent name collisions, especially in large projects. It logically groups the following code related to memory management (as the name suggests).
+
+template <class T>
+struct is_deleter_function_candidate
+: std::false_type {};
+
+template <class T> struct is_deleter_function_candidate : std::false_type {};: This defines a class template named is_deleter_function_candidate. 
+This is the core of our type trait.
+template <class T>: This indicates that the struct is a template and accepts a type parameter T. T will be the type we want to check.
+struct is_deleter_function_candidate: Defines the struct itself.
+: std::false_type {}: This is inheritance from std::false_type. This is crucial. It sets the default value of the type trait to false. That is, 
+by default, the type T is not considered a suitable deleter function candidate. The inheritance from std::false_type provides a convenient way 
+to represent a boolean false at compile time as a type. The empty braces {} are used for default initialization.
+
+template <class T>
+struct is_deleter_function_candidate<void (*)(T*)>
+: std::true_type {};
+
+template <class T> struct is_deleter_function_candidate<void (*)(T*)> : std::true_type {};: This is a partial specialization of the is_deleter_function_candidate template. 
+Partial specialization allows you to provide a different implementation of a template for specific types.
+template <class T>: Again, declares that it is a template.
+struct is_deleter_function_candidate<void (*)(T*)>: This is the specialization. It says: "If the type T is exactly a pointer to a function that 
+takes a pointer to T as an argument and returns void, then..."
+void (*)(T*): This is the specific type that triggers this specialization. It represents a function pointer where:
+void: The function returns nothing.
+(*): Indicates it's a function pointer.
+(T*): The function takes a single argument, which is a pointer to a type T.
+: std::true_type {}: This inherits from std::true_type. This means that if T matches the pattern void (*)(T*), 
+the type trait will evaluate to true. Similar to std::false_type, std::true_type represents a boolean true at compile time as a type.
+
+
+template <class T>
+constexpr auto is_deleter_function_candidate_v =
+is_deleter_function_candidate<T>::value;
+
+template <class T> constexpr auto is_deleter_function_candidate_v = is_deleter_function_candidate<T>::value;: This line provides a convenient way to access the value of the type trait as a constexpr variable.
+template <class T>: Again, declares it's a template.
+constexpr auto is_deleter_function_candidate_v: Declares a constexpr variable named is_deleter_function_candidate_v. constexpr means that the value of this variable can be computed at compile time. 
+auto lets the compiler deduce the type (which will be bool). The v suffix is a common convention to indicate a variable holding the value of a type trait.
+= is_deleter_function_candidate<T>::value;: This assigns the value of the type trait to the variable. is_deleter_function_candidate<T>::value accesses the value member of the
+is_deleter_function_candidate struct (which is inherited from std::true_type or std::false_type). This effectively gives us a boolean value (true or false) representing whether T is a suitable deleter function candidate.
+
+In summary:
+
+This code defines a type trait that checks if a given type is a function pointer that takes a pointer to its own type as an argument (and returns void). This type of function pointer is often used as a deleter in smart pointers 
+to release dynamically allocated memory. The is_deleter_function_candidate_v variable provides a convenient way to access the result of this check at compile time.
+
+===============================================================================================================================================================================
+
+
+namespace managing_memory_book {
+// ...
+// unique_ptr general template
+template <class T, class D = default_deleter<T>>
+class unique_ptr : std::conditional_t <
+is_deleter_function_candidate_v<D>,
+deleter_pointer_wrapper<T>, D
+> {
+using deleter_type = std::conditional_t <
+is_deleter_function_candidate_v<D>,
+deleter_pointer_wrapper<T>,
+D
+>;
+T* p = nullptr;
+public:
+
+unique_ptr() = default;
+unique_ptr(T* p) : p{ p } {
+}
+unique_ptr(T* p, void (*pf)(T*))
+: deleter_type{ pf }, p{ p } {
+}
+~unique_ptr() {
+(*static_cast<deleter_type*>(this))(p);
+}
+}
+};
+
+
+It appears to be a simplified implementation of a unique_ptr class, aiming to mimic the functionality of the standard library's std::unique_ptr.
+I'll explain each part, from the namespace declaration to the destructor.
+
+namespace managing_memory_book {
+
+namespace managing_memory_book {: This line declares a namespace called managing_memory_book. Namespaces are used to organize code and avoid naming conflicts,
+especially in larger projects. All the code within the curly braces {} is part of this namespace. It's a way to encapsulate related functionalities.
+
+template <class T, class D = default_deleter<T>>
+class unique_ptr : std::conditional_t <
+is_deleter_function_candidate_v<D>,
+deleter_pointer_wrapper<T>, D
+> {
+
+
+template <class T, class D = default_deleter<T>>: This line introduces a class template.
+class T: This declares a template parameter T, which represents the type of object that the unique_ptr will manage (point to). For example, unique_ptr<int> would manage integer objects.
+class D = default_deleter<T>: This declares a second template parameter D, representing the deleter. The deleter is responsible for freeing the memory associated with the managed object 
+when the unique_ptr goes out of scope. default_deleter<T> is specified as the default value for D. This likely means if you don't provide a custom deleter, a default one (typically delete) will be used.
+class unique_ptr : std::conditional_t <is_deleter_function_candidate_v<D>, deleter_pointer_wrapper<T>, D>: This line defines the unique_ptr class and its inheritance. It uses std::conditional_t to 
+conditionally determine the base class based on the type of deleter (D).
+std::conditional_t<condition, type_if_true, type_if_false>: This is a template metaprogramming construct. It evaluates the condition at compile time. If the condition is true, 
+the type becomes type_if_true; otherwise, it becomes type_if_false.
+is_deleter_function_candidate_v<D>: This is a type trait (likely a custom one) that checks if the type D is a function pointer (or something that can be called like a function). 
+In other words, is it a function that can delete an object of type T? The _v suffix indicates this is a variable template – it evaluates to a bool value at compile time.
+deleter_pointer_wrapper<T>: This is likely a wrapper class that handles function pointer deleters. It's used when a function pointer is provided as the deleter. 
+It will store and invoke the function pointer when needed.
+D: If D is not a function pointer (e.g., it's a custom functor class), then unique_ptr directly inherits from D. This allows the deleter to have custom behaviour.
+In essence, this inheritance structure allows unique_ptr to handle both function pointer deleters (via the wrapper) and custom deleter objects directly.
+
+using deleter_type = std::conditional_t <
+is_deleter_function_candidate_v<D>,
+deleter_pointer_wrapper<T>,
+D
+>;
+
+
+using deleter_type = std::conditional_t <is_deleter_function_candidate_v<D>, deleter_pointer_wrapper<T>, D>;: This line defines a type alias named deleter_type. It essentially duplicates the conditional
+type selection from the class inheritance, making the deleter type more convenient to refer to within the class. It's the same logic as before: it determines whether the internal deleter will be 
+deleter_pointer_wrapper<T> or D itself depending on if D is a function pointer.
+
+T* p = nullptr;
+T* p = nullptr;: This line declares a private member variable p of type T*. This pointer will store the address of the managed object.
+It's initialized to nullptr to indicate it doesn't point to anything initially.
+
+public:
+    unique_ptr() = default;
+
+public:: This keyword marks the beginning of the public section of the class, where members are accessible from outside the class.
+unique_ptr() = default;: This line defines the default constructor. = default tells the compiler to generate the default constructor automatically.
+This default constructor will initialize the p pointer to nullptr.
+
+unique_ptr(T* p) : p{ p } {
+    }
+
+unique_ptr(T* p) : p{ p } {}: This is the constructor that takes a raw pointer p as an argument.
+: p{ p }: This is a member initializer list. It initializes the p member variable of the unique_ptr object with the value of the input pointer p. This means the unique_ptr now owns the memory pointed to by p.
+{}: This is the constructor body, which is empty in this case. The initialization is handled entirely in the member initializer list.
+This constructor takes ownership of the raw pointer p.
+
+
+unique_ptr(T* p, void (*pf)(T*))
+    : deleter_type{ pf }, p{ p } {
+    }
+
+
+unique_ptr(T* p, void (*pf)(T*)): This is a constructor that takes a raw pointer p and a function pointer pf as arguments.
+void (*pf)(T*): This declares pf as a pointer to a function that takes a T* (a pointer to an object of type T) as input and returns void (nothing). 
+This function will be used as the custom deleter.
+: deleter_type{ pf }, p{ p }: This is the member initializer list.
+deleter_type{ pf }: This initializes the deleter_type member (which, as we saw earlier, will likely be a deleter_pointer_wrapper<T> if 
+pf is a function pointer, or D directly if not) with the function pointer pf. The wrapper class will handle storing and calling the function pointer.
+p{ p }: This initializes the p member variable with the input pointer p.
+{}: The constructor body is empty.
+
+
+~unique_ptr() {
+        (*static_cast<deleter_type*>(this))(p);
+    }
+};
+
+~unique_ptr() { ... }: This is the destructor of the unique_ptr class. It's called automatically when a unique_ptr object goes out of scope.
+(*static_cast<deleter_type*>(this))(p);: This is the core of the destructor's functionality – it calls the deleter to free the managed memory.
+static_cast<deleter_type*>(this): This performs a static cast. Remember that unique_ptr inherits from either D or deleter_pointer_wrapper<T>. 
+This cast treats the unique_ptr object as its base class (which is the deleter type). This is how the destructor accesses the deleter object or 
+function pointer through the base class pointer.
+(* ... )(p): This dereferences the casted pointer (treating it as a function pointer or a functor object) and calls it with the raw pointer p as the argument. 
+This invokes the deleter, which then frees the memory pointed to by p.
+
+In Summary:
+
+This code implements a basic unique_ptr class that manages the lifetime of a dynamically allocated object.  It ensures that the memory is automatically freed 
+when the unique_ptr goes out of scope, preventing memory leaks.  The use of templates and conditional inheritance allows it to work with different types of objects
+and different deletion strategies (default delete, custom function pointers, or custom functors).
+
+Important Note: This is a simplified implementation. A full std::unique_ptr has additional features like move semantics, reset capabilities, and other refinements for robustness and efficiency.
+
+
+
+
+
+
+
+
+
+
+
+
+
