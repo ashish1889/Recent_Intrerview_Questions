@@ -289,8 +289,124 @@ This code defines a unique_ptr-like class that enforces exclusive ownership of a
 this exclusivity and provides efficient move semantics (move constructor and move assignment operator) to transfer ownership without unnecessary copying. 
 The swap function is a utility to facilitate ownership transfer efficiently.
 
+================================================================================================================================================================================
 
 
+// ...
+// ...
+bool empty() const noexcept { return !p; }
+operator bool() const noexcept { return !empty(); }
+bool operator==(const unique_ptr &other)
+const noexcept {
+return p == other.p;
+}
+// inferred from operator==() since C++20
+bool operator!=(const unique_ptr &other)
+const noexcept {
+return !(*this == other);
+}
+T *get() noexcept { return p; }
+const T *get() const noexcept { return p; }   
+
+
+This code is part of a unique_ptr implementation, a smart pointer in C++ that enforces exclusive ownership of a dynamically allocated object.
+// ...
+// ...
+bool empty() const noexcept { return !p; }
+
+
+bool empty() const noexcept: This line declares a member function named empty().
+bool: The function returns a boolean value (true or false).
+empty(): The name of the function. It checks if the unique_ptr is holding a valid pointer.
+const: This indicates that the function does not modify the object's state (it's a "constant member function").
+noexcept: This specifies that the function is guaranteed not to throw any exceptions. This can help with optimizations.
+return !p;: This is the function body.
+p: This is a private member variable (presumably a pointer to the managed object) within the unique_ptr class. (Not shown in the snippet but assumed).
+!p: This negates the value of the pointer p. If p is a null pointer (doesn't point to a valid object), !p evaluates to true. 
+If p points to a valid object, !p evaluates to false.
+return !p;: The function returns true if the pointer p is null (i.e., the unique_ptr is empty), and false otherwise.
+
+
+operator bool() const noexcept { return !empty(); }
+
+
+operator bool() const noexcept: This line defines an overloaded operator.
+operator bool(): This overloads the boolean conversion operator. 
+This means that a unique_ptr object can be directly used in a boolean context (e.g., in an if statement).
+const: Ensures this operator doesn't modify the object.
+noexcept: Guarantees that the operator won't throw exceptions.
+return !empty();: The function body.
+empty(): Calls the empty() function we just examined.
+!empty(): Negates the result of empty(). So, it returns true if the unique_ptr is not empty 
+(i.e., it holds a valid pointer) and false if it is empty. This provides a convenient, natural way to check if the unique_ptr is managing an object.
+
+
+bool operator==(const unique_ptr &other)
+const noexcept {
+return p == other.p;
+}
+
+bool operator==(const unique_ptr &other) const noexcept: This line defines the equality operator (==) for unique_ptr objects.
+bool operator==: Overloads the equality operator. Allows you to compare two unique_ptr objects using ==.
+const unique_ptr &other: Takes a constant reference to another unique_ptr object as input. Using a reference avoids
+unnecessary copying. const ensures the other unique_ptr isn't modified.
+const: Ensures that the operator itself does not modify the current unique_ptr object.
+noexcept: Indicates that the operator won't throw exceptions.
+return p == other.p;:
+p: The pointer held by the current unique_ptr object.
+other.p: The pointer held by the unique_ptr object passed as an argument (other).
+p == other.p: Compares the two raw pointers (p and other.p). Two unique_ptrs are considered equal if 
+they both point to the same object in memory (or if both are empty).
+return p == other.p;: Returns true if the pointers are equal, false otherwise.
+
+
+// inferred from operator==() since C++20
+bool operator!=(const unique_ptr &other)
+const noexcept {
+return !(*this == other);
+}
+
+bool operator!=(const unique_ptr &other) const noexcept: This defines the inequality operator (!=).
+bool operator!=: Overloads the inequality operator, allowing comparison with !=.
+const unique_ptr &other: Takes a constant reference to another unique_ptr object.
+const: Ensures the operator doesn't modify the current object.
+noexcept: Guarantees no exceptions are thrown.
+return !(*this == other);:
+*this: Represents the current unique_ptr object.
+(*this == other): Calls the operator== function defined earlier to compare the current unique_ptr with other.
+!(*this == other): Negates the result of the equality comparison. Returns true if the unique_ptrs are not equal, 
+false if they are equal.
+Note: The comment "// inferred from operator==() since C++20" indicates that in C++20 and later, the compiler 
+will automatically generate this operator!= if you define operator==.
+
+
+T *get() noexcept { return p; }
+const T *get() const noexcept { return p; }
+
+T *get() noexcept { return p; }:  This is the first overload of the get() member function.
+
+T *: The return type is a pointer to the type of object managed by the unique_ptr. T is a template parameter representing the managed type.
+get(): The name of the function. It provides access to the raw pointer held by the unique_ptr.
+noexcept: Guarantees no exceptions.
+return p;: Returns the raw pointer p (the pointer to the managed object).  Important:  The caller should not delete this pointer, as 
+the unique_ptr owns it and will handle its deletion when the unique_ptr goes out of scope.
+
+const T *get() const noexcept { return p; }: This is the second overload of the get() member function.
+
+const T *: The return type is a constant pointer to the managed object type. This means the caller cannot use this pointer to modify the object.
+const: This const after the parameter list indicates that this overload can be called on const unique_ptr objects.
+noexcept: guarantees no exception will be thrown.
+return p;: Returns the raw pointer p.  Similar to the other overload, the caller shouldn't delete this pointer.
+
+In Summary:
+
+This code defines essential parts of a unique_ptr class. It provides ways to:
+
+Check if the unique_ptr is empty (holds a valid pointer or not).
+Treat the unique_ptr as a boolean value (true if it holds a pointer, false if it's empty).
+Compare two unique_ptrs for equality/inequality.
+Access the raw pointer to the managed object (without taking ownership).
+This is a foundational part of modern C++ resource management, preventing memory leaks and simplifying cleanup.
 
 
 
