@@ -408,7 +408,133 @@ Compare two unique_ptrs for equality/inequality.
 Access the raw pointer to the managed object (without taking ownership).
 This is a foundational part of modern C++ resource management, preventing memory leaks and simplifying cleanup.
 
+======================================================================================================================
 
+unique_ptr(const unique_ptr&) = delete;
+unique_ptr& operator=(const unique_ptr&) = delete;
+void swap(unique_ptr &other) noexcept {
+using std::swap;
+swap(p, other.p);
+}
+unique_ptr(unique_ptr &&other) noexcept
+: p{ std::exchange(other.p, nullptr) } {
+}
+unique_ptr& operator=(unique_ptr &&other) noexcept {
+unique_ptr{ std::move(other) }.swap(*this);
+return *this;
+}
+
+
+this is the classic small-implementation of a move-only unique_ptr-like type. I'll explain each line / block so 
+you understand the intent, semantics and safety properties.
+
+I'll assume p is the raw pointer data member, e.g.
+
+T* p;
+
+and that this code sits inside a unique_ptr class template.
+
+unique_ptr(const unique_ptr&) = delete;
+
+Declares the copy constructor and immediately deletes it.
+
+This prevents copying: you cannot create a second unique_ptr that owns the same raw pointer. 
+It enforces unique ownership.
+
+unique_ptr& operator=(const unique_ptr&) = delete;
+
+Declares and deletes the copy-assignment operator.
+
+Prevents assigning one unique_ptr to another by copy (again enforcing uniqueness).
+
+void swap(unique_ptr &other) noexcept {
+using std::swap;
+swap(p, other.p);
+}
+
+Defines a swap member function that exchanges the managed pointers of *this and other.
+
+noexcept promises swap won't throw; this is important for providing strong exception guarantees in other 
+operations that use swap.
+
+using std::swap; enables argument-dependent lookup (ADL) so if a better swap is available for the type of p 
+it will be found; for raw pointers it just resolves to std::swap.
+
+swap(p, other.p); swaps the two raw pointers. After swap, each unique_ptr now owns the other's resource.
+
+unique_ptr(unique_ptr &&other) noexcept
+: p{ std::exchange(other.p, nullptr) } {
+}
+
+This is the move constructor. It constructs *this by taking ownership of other's pointer.
+
+unique_ptr &&other — other is an rvalue reference, the source of the move.
+
+noexcept marks the move constructor as not throwing. This allows moves in many STL contexts (e.g., containers) 
+to be used safely and optimally.
+
+Member initializer p{ std::exchange(other.p, nullptr) } does two things in one expression:
+
+std::exchange(other.p, nullptr) returns the old value of other.p and sets other.p to nullptr.
+
+That returned old value initializes p. So ownership transfers to *this and other is left empty (null).
+
+The body is empty because all work is done in the initializer.
+
+(Why std::exchange rather than manual p = other.p; other.p = nullptr;? It's concise and exception-safe;
+the net effect is the same.)
+
+unique_ptr& operator=(unique_ptr &&other) noexcept {
+unique_ptr{ std::move(other) }.swap(*this);
+return *this;
+}
+
+This is the move-assignment operator. It assigns the contents of other into *this by moving.
+
+noexcept again promises it won't throw (important for similar reasons as above).
+
+The implementation uses the move-and-swap idiom:
+
+unique_ptr{ std::move(other) } constructs a temporary unique_ptr by moving other (calls the move constructor above). Now the temporary holds the resource that came from other, and other is left null.
+
+.swap(*this) swaps the temporary's pointer with *this's pointer. After the swap:
+
+*this owns the resource that was in other.
+
+the temporary owns whatever *this used to own.
+
+When the temporary is destroyed at the end of the full expression, its destructor will release the old 
+resource that used to belong to *this. That ensures no resource leak.
+
+return *this; returns a reference to the assigned object (standard operator= contract).
+
+Why use move-and-swap instead of direct transfer? Benefits:
+
+It is self-assignment safe. If &other == this, constructing a temporary from std::move(other) will leave 
+other null, swapping with *this is safe, and the destructor of the temporary will then do nothing harmful. 
+(In practice, one could also check for self-assignment early, but move-and-swap handles it cleanly.)
+
+It gives strong exception-safety when swap and the move constructor are noexcept (here both are noexcept 
+so the assignment is noexcept).
+
+It's simple and avoids duplicating cleanup logic.
+
+Additional notes / implications
+
+Because copy operations are deleted, the unique_ptr is move-only, which is the intended semantic for unique 
+ownership.
+
+noexcept on move ctor and swap is beneficial: standard containers assume noexcept move ops to prefer moves over 
+copies in some operations (reallocations, etc.). Declaring them noexcept enables those optimizations safely.
+
+The move constructor leaves the source other in a valid, empty state (other.p == nullptr) — this is the typical 
+moved-from state for smart pointers.
+
+The move-assignment is implemented in terms of move-construction + swap, which ensures proper cleanup of the old
+resource and simple, correct semantics.
+
+The code assumes the destructor and other resource-managing functions exist and properly release p when 
+needed (e.g., destructor ~unique_ptr() would delete p; or call the deleter).
 
 
 
