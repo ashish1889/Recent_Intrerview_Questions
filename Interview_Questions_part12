@@ -1,0 +1,74 @@
+#include <iostream>
+#include <thread>
+#include <stop_token>
+#include <chrono>
+
+using namespace std;
+
+void threadFunction(stop_token token, int id) {
+    while (!token.stop_requested()) {
+        cout << "Thread " << id << " doing some work." << endl;
+        this_thread::sleep_for(500ms);
+    }
+    cout << "Stop requested for thread " << id << "." << endl;
+}
+
+int main() {
+    stop_token st;
+    thread t1(threadFunction, st, 1);
+    thread t2(threadFunction, st, 2);
+
+    // Let the threads run for a few seconds
+    this_thread::sleep_for(3s);
+
+    // Request the threads to stop
+    st.stop();
+
+    t1.join();
+    t2.join();
+
+    cout << "Main thread exiting." << endl;
+
+    return 0;
+}
+
+
+
+The primary purpose of this function is to simulate a thread performing some work and, importantly, to respond to a "stop" signal. 
+This is common in scenarios where you want to be able to gracefully terminate threads, such as when an application is shutting down or a task is no longer needed.
+
+Code Breakdown:
+
+void threadFunction(stop_token token, int id):
+
+void: This indicates that the function doesn't return any value.
+threadFunction: This is the name of the function.
+stop_token token: This is a crucial part. stop_token is a class (likely from the C++ standard library, specifically <stop_token>) that allows the thread to be signaled to stop its work. 
+It represents a token that, when requested to stop, will signal the thread to terminate.
+int id: This is an integer that uniquely identifies the thread. This is helpful for logging or debugging, allowing you to distinguish between multiple threads running the same function.
+while (!token.stop_requested()) { ... }:
+
+while (!token.stop_requested()): This is the main loop of the thread.
+token.stop_requested(): This method of the stop_token object checks if a stop has been requested. It returns true if a stop has been requested, and false otherwise.
+!: The ! operator negates the result. So, the loop continues as long as a stop has not been requested. This is the core of the thread's work cycle – it keeps running until it's told to stop.
+println("Thread {} doing some work.", id);:
+
+println(...): This is a function call to print a message to the console (or a log). The specific implementation of println isn't shown, but it's assumed to be a standard output function.
+"Thread {} doing some work.", id: This is the message being printed. The {} is a placeholder that will be replaced by the value of the id variable. So, the output will be something like "Thread 1 doing some work."
+this_thread::sleep_for(500ms);:
+
+this_thread::sleep_for(...): This is a function call to pause the current thread for a specified duration. It's from the <thread> header.
+500ms: This specifies the duration to sleep for – 500 milliseconds (half a second). This simulates the thread doing actual work, by pausing for a short period.
+println("Stop requested for thread {}.", id);:
+
+This line is executed after the while loop terminates, meaning it's executed only when token.stop_requested() returns true. It prints a message indicating that the thread has received the stop signal.
+In essence:
+
+The threadFunction simulates a worker thread that continuously performs a task (printing a message and sleeping) until it receives a stop signal.  
+The stop_token mechanism provides a clean and standardized way to request the thread to terminate, allowing it to clean up any resources or finish its current work before exiting.
+
+How it's typically used:
+
+This function would be launched in a separate thread using std::thread (from the <thread> header). Another part of the application would then hold the stop_token and, when it wants to stop the thread,
+it would call token.stop() or token.stop_request().
+
