@@ -72,3 +72,113 @@ How it's typically used:
 This function would be launched in a separate thread using std::thread (from the <thread> header). Another part of the application would then hold the stop_token and, when it wants to stop the thread,
 it would call token.stop() or token.stop_request().
 
+===============================================================================================================================================================================================================================================
+
+ jthread is a relatively recent addition to the C++ standard library (introduced in C++20), designed to simplify and improve thread management, particularly when dealing with tasks that might be stopped or detached. 
+It aims to address some of the common pitfalls and complexities associated with traditional thread handling.
+
+1. What problem does jthread solve?
+
+Traditional thread management with std::thread can be cumbersome, especially when you need to ensure proper cleanup of thread resources. Here's a common scenario:
+
+You create a std::thread.
+You start a task in that thread.
+You need to be able to stop the task (e.g., because of an error or a cancellation request).
+You need to ensure that the thread's resources are properly released (e.g., memory is deallocated) even if the task throws an exception or exits unexpectedly.
+With std::thread, you'd typically need to use a combination of flags, mutexes, and careful exception handling to manage all of this correctly.  It's easy to make mistakes that can lead to resource leaks or crashes.
+
+jthread simplifies this by providing RAII (Resource Acquisition Is Initialization) semantics.  It automatically manages the thread's lifecycle, ensuring that the thread is properly 
+joined or detached when the jthread object goes out of scope, even in the presence of exceptions.
+
+2. Key Features and Benefits of jthread
+
+Automatic Thread Management: The most significant benefit.  The jthread destructor automatically join()s the thread if the thread is still running when the jthread object is destroyed.
+If you explicitly detach() the thread, jthread makes sure it’s properly detached. This avoids resource leaks.
+
+Stop Support: jthread provides a request_stop() method that signals the thread to stop its execution.  The thread is responsible for checking this signal and exiting gracefully. 
+This is a much cleaner way to request thread termination than using shared flags and manual loop checking.
+
+Exception Propagation: If the thread's function throws an exception, jthread will re-throw that exception in the join() method. This allows you to handle exceptions that occur within the thread in a more centralized way.
+
+Move-Only: jthread is move-only. This means you cannot copy a jthread object.  This is a deliberate design choice to prevent accidental sharing of the underlying thread object, 
+which could lead to data races and other problems. You can only transfer ownership of the thread to another jthread using move semantics.
+
+Callable Object: When you construct a jthread, you pass it a callable object (a function, a lambda expression, or an object with an overloaded operator()).  This callable object is the 
+function that will be executed in the separate thread.
+
+3. How it Works (Under the Hood - Simplified)
+
+The jthread constructor starts a new thread.
+The thread executes the provided callable object.
+The jthread object internally maintains a flag to indicate whether the thread has been requested to stop.
+The callable object should periodically check the stop_token associated with the jthread (jthread::stop_token).
+When the jthread is destroyed, its destructor calls join() on the thread if it's still running. This ensures the thread completes and resources are released. If you explicitly call detach(), the thread is detached.
+4. Example
+
+Let's look at a slightly modified version of your original code to illustrate jthread's features:
+
+#include <iostream>
+#include <thread>
+#include <stop_token>  // Required for jthread
+
+class Calculator
+{
+public:
+    explicit Calculator(int a, int b) : m_a { a }, m_b { b } {}
+
+    void operator()() {
+        std::stop_token stop_token; // Get the stop token
+        while(!stop_token.stop_requested()){ //Check if stop has been requested
+            result = m_a * m_b;
+            std::cout << "Calculating...\n";
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+
+    int getResult() const { return result; }
+
+private:
+    int m_a { 0 };
+    int m_b { 0 };
+    int result { 0 };
+};
+
+int main() {
+    Calculator calculator { 21, 2 };
+    jthread job { ref(calculator) };
+
+    // Simulate some work in the main thread
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    // Request the thread to stop
+    job.request_stop();
+
+    job.join(); // Wait for the thread to finish
+
+    std::cout << "21*2 = " << calculator.getResult() << std::endl;
+
+    return 0;
+}
+
+Key points in this example:
+
+#include <stop_token>: You need to include this header file to use std::stop_token.
+std::stop_token stop_token;: This gets the stop token associated with the jthread.
+while(!stop_token.stop_requested()): The calculator's operator() now checks stop_token.stop_requested() in a loop. 
+When job.request_stop() is called, the stop_token is signaled, and the loop terminates gracefully.
+job.request_stop(): This signals the thread to stop.
+job.join(): Waits for the thread to complete after the stop request.
+5. When to Use jthread
+
+When you need a simple and safe way to manage threads, especially if thread termination is a possibility.
+When you want automatic resource management to prevent leaks.
+When you need to propagate exceptions from the thread to the main thread.
+6. When Not to Use jthread
+
+If you need very fine-grained control over thread attributes (e.g., thread priority). std::thread might be more appropriate in those cases.
+If you don't need the automatic stop or exception propagation features. std::thread can be simpler if you just need to run a task in the background 
+and don't need to worry about termination or exceptions.
+Resources
+
+cppreference.com: https://en.cppreference.com/w/cpp/thread/jthread
+C++20 jthread explained: https://www.ibm.com/developerworks/library/cpp-jthread/
