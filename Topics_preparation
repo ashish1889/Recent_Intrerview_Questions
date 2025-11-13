@@ -4,6 +4,24 @@
 4. Android- HAL,CarService,CarManager,SELinux
 5. Linux- Process Management, Memory Management.
 
+Understanding IPC (Inter-Process Communication) in Android AOSP
+
+In Android, every app and service runs in its own process — yet they constantly need to communicate. That’s where IPC (Inter-Process Communication) comes in.
+Here are the main types of IPC used in Android (AOSP) 👇
+🔹 Binder (AIDL) — The backbone of Android IPC.
+ Used by system services, HALs, and framework layers for secure, fast communication.
+🔹 Messenger — Simplified Binder-based IPC using Handler and Message.
+🔹 Socket (Unix/TCP) — Low-level Linux IPC, used by system daemons like zygote, vold, or logd.
+🔹 Shared Memory (Ashmem / mmap) — For high-performance data exchange, especially in Audio or Graphics subsystems.
+🔹 Intent — High-level IPC between Activities, Services, and Broadcast Receivers.
+🔹 ContentProvider — For structured data sharing across apps, backed by Binder.
+🔹 System V IPC & FIFO — Legacy Linux mechanisms still used in some vendor components.
+
+💡 In Android Automotive OS (AAOS):
+Binder is used for HALs like VHAL, Audio HAL, and Power HAL.
+Shared memory is used for audio and sensor data.
+Sockets connect Android with external ECUs.
+
 CPPNuts github-
 https://github.com/cppnuts-yt/CppNuts
 
