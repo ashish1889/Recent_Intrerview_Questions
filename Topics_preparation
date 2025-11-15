@@ -22,6 +22,14 @@ Binder is used for HALs like VHAL, Audio HAL, and Power HAL.
 Shared memory is used for audio and sensor data.
 Sockets connect Android with external ECUs.
 
+Writing Platform driver-
+https://www.youtube.com/watch?v=N93xfeFv640
+https://github.com/Ragab2010/CPP_COURCES/tree/main/write_linux_platform_driver
+
+https://electricaltrainingalliance.org/Learning/Blended
+https://www.google.org/
+https://www.google.com/about/careers/applications/jobs/results/128691797126718150
+
 Free kernel ebook-
 https://freecomputerbooks.com/Linux-Kernel-Programming-Part-2-Char-Device-Drivers-and-Kernel-Synchronization.html
 
