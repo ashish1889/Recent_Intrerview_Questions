@@ -17,6 +17,16 @@ Here are the main types of IPC used in Android (AOSP) 👇
 🔹 ContentProvider — For structured data sharing across apps, backed by Binder.
 🔹 System V IPC & FIFO — Legacy Linux mechanisms still used in some vendor components.
 
+To delete-
+
+
+2 fist - Pasta, 1 tsp oil - boil on PC until it softens
+1 small carrot, 1 capsicum, 1onion - Fry in pan with 1/4 tsp salt + 1 maggi masala + 1 spoon myonese+ 1 spoon tomato ketchup
+
+function all_aboard takes a positional argument a (which is 4), collects subsequent positional arguments (7, 3, 0) into a tuple, and gathers keyword arguments (x=10, y=64) into a dictionary. 
+This results in the output 4 (7, 3, 0) {'x': 10, 'y': 64}, demonstrating your understanding of how Python handles function arguments.
+
+
 💡 In Android Automotive OS (AAOS):
 Binder is used for HALs like VHAL, Audio HAL, and Power HAL.
 Shared memory is used for audio and sensor data.
@@ -29,6 +39,7 @@ https://github.com/Ragab2010/CPP_COURCES/tree/main/write_linux_platform_driver
 https://electricaltrainingalliance.org/Learning/Blended
 https://www.google.org/
 https://www.google.com/about/careers/applications/jobs/results/128691797126718150
+https://jobs.careers.microsoft.com/global/en/job/1896436/Principal-Software-Engineer---Azure-Core?amp;utm_campaign=LinkedIn-job-share
 
 Free kernel ebook-
 https://freecomputerbooks.com/Linux-Kernel-Programming-Part-2-Char-Device-Drivers-and-Kernel-Synchronization.html
