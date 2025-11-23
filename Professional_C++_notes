@@ -209,3 +209,12 @@ You can free the underlying pointer of a unique_ptr and optionally change it to 
 mySimpleSmartPtr.reset();
 // Free resource and set to nullptr
 mySimpleSmartPtr.reset(new Simple{}); // Free resource and set to a new Simple instance
+
+
+You can disconnect the underlying pointer from a unique_ptr with release() which returns the underlying pointer to the resource and then sets the smart pointer to nullptr. 
+Effectively, the smart pointer loses ownership of the resource, and as such, you become responsible for freeing the resource when you are done with it! Here’s an example:
+Simple* simple { mySimpleSmartPtr.release() }; // Release ownership
+// Use the simple pointer...
+delete simple;
+simple = nullptr;
+Because a unique_ptr represents unique ownership, it cannot be copied! But, spoiler alert, it is possible to move one unique_ptr to another one using move semantics
