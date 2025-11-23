@@ -28,3 +28,25 @@ myArray = nullptr;
 
 In new code, you should use the C++ Standard Library containers such as std::array and vector. For example, use vector<T> for a one-­dimensional dynamic array. For a two-­dimensional dynamic array, you could use
 vector<vector<T>>, and similar for higher dimensions.
+
+char* scaryPointer { (char*)7 };
+
+This C++ line, char* scaryPointer { (char*)7 };, declares a character pointer named scaryPointer and initializes it to point to a specific memory address: 7. 
+Explanation of the Line
+char* scaryPointer: This declares a pointer named scaryPointer that is designed to hold the memory address of a single character or the beginning of a character array.
+{ ... }: This uses C++11 uniform initialization syntax.
+(char*)7: This is a cast operation. The integer value 7 is explicitly converted into a pointer type (char*). The pointer is therefore assigned the absolute memory address 0x7 (or just 7 in decimal). 
+Pitfalls Associated with It
+Initializing a pointer to a fixed, low-value memory address like this is fraught with danger in modern programming environments. 
+Accessing Invalid Memory (Undefined Behavior): Address 7 is almost certainly not a valid memory location that your application is allowed to read from or write to [1, 2].
+Operating System Reservations: Memory addresses near the beginning of the address space (often called the "zero page") are typically reserved by the operating system to 
+catch accidental dereferences of NULL pointers or similar errors [1].
+
+Segmentation Faults/Access Violations: Attempting to read from or write to this address (e.g., via *scaryPointer = 'a';) will likely cause your program to crash immediately with a 
+segmentation fault or an access violation error, as the OS intervenes to protect system memory [1, 2].
+Platform Dependence: The behavior is entirely dependent on the specific system architecture and operating system.
+In some embedded systems with no OS, address 7 might be a perfectly valid location, perhaps a control register for a peripheral [1, 2].
+On a standard PC (Linux, Windows, macOS), this address is inaccessible to user-level programs. Code relying on this kind of pointer manipulation is not portable [1, 2].
+Lack of Purpose (In Modern C++): In standard application development, there is rarely a legitimate reason to manually hardcode an absolute memory address like this. Pointers should point to 
+memory dynamically allocated by the program (using new or malloc), or to the address of an existing variable in the program's valid memory space. 
+In summary, this line creates a pointer that points into forbidden territory, making it an excellent example of a "scary pointer" that will almost certainly lead to program crashes if used.
