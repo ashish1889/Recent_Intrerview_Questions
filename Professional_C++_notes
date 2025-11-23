@@ -219,6 +219,27 @@ delete simple;
 simple = nullptr;
 Because a unique_ptr represents unique ownership, it cannot be copied! But, spoiler alert, it is possible to move one unique_ptr to another one using move semantics
 
+Sample code for release() method-
+
+#include <iostream>
+#include <memory>
+using namespace std;
+int main()
+{
+    unique_ptr<int> x{make_unique<int>(2)};
+   // cout<<*x;
+    int* y{x.release()};
+    cout<<*y<<endl;
+    if(x == nullptr)
+    cout<<"prev pointer released";
+
+    return 0;
+}
+
+O/p-
+2
+prev pointer released
+
 
 As a sneak preview, the std::move() utility function can be used to explicitly move ownership of a unique_ptr, as in the following code snippet.
 
