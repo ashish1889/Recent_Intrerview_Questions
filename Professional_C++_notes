@@ -170,3 +170,14 @@ If the go() member function throws an exception, the call to delete is never exe
 
 unique_ptr is a generic smart pointer that can point to any kind of memory. That’s why it is a class template, and make_unique() a function template. 
 Both require a template parameter between angle brackets, < >, specifying the type of memory you want the unique_ptr to point to.
+
+
+The following function uses a unique_ptr instead of a raw pointer. The Simple object is not explicitly deleted; but when the unique_ptr instance goes out of scope
+(at the end of the function, or because an exception is thrown), it automatically deallocates the Simple object in its destructor.
+void notLeaky()
+{
+auto mySimpleSmartPtr { make_unique<Simple>() };
+mySimpleSmartPtr-­>go();
+}
+This code uses make_unique(), in combination with the auto keyword, so that you only have to specify the type of the pointer, Simple in this case, once. This is the recommended way to cre-
+ate a unique_ptr. If the Simple constructor requires parameters, you pass them as arguments to make_unique().
