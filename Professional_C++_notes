@@ -194,3 +194,18 @@ With make_unique(), nothing would leak:
 foo(make_unique<Simple>(), make_unique<Bar>(data()))
 Since C++17, both calls to foo() are safe, but I still recommend using make_unique() as it results in code that is easier to read.
 Always use make_unique() to create a unique_ptr.
+
+
+Smart pointers can still be dereferenced (using * or -­>) just like standard pointers. For example, in the earlier example, the -­> operator is used to call the go() member function:
+mySimpleSmartPtr-­>go();
+Just as with standard pointers, you can also write this as follows:
+(*mySimpleSmartPtr).go();
+The get() member function can be used to get direct access to the underlying pointer. This can be useful to pass the pointer to a function that requires a raw pointer. 
+For example, suppose you have the following function:
+void processData(Simple* simple) { /* Use the simple pointer... */ }
+Then you can call it as follows:
+processData(mySimpleSmartPtr.get());
+You can free the underlying pointer of a unique_ptr and optionally change it to another pointer using reset(). Here’s an example:
+mySimpleSmartPtr.reset();
+// Free resource and set to nullptr
+mySimpleSmartPtr.reset(new Simple{}); // Free resource and set to a new Simple instance
