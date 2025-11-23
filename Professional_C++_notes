@@ -50,3 +50,15 @@ On a standard PC (Linux, Windows, macOS), this address is inaccessible to user-l
 Lack of Purpose (In Modern C++): In standard application development, there is rarely a legitimate reason to manually hardcode an absolute memory address like this. Pointers should point to 
 memory dynamically allocated by the program (using new or malloc), or to the address of an existing variable in the program's valid memory space. 
 In summary, this line creates a pointer that points into forbidden territory, making it an excellent example of a "scary pointer" that will almost certainly lead to program crashes if used.
+
+
+Casting with Pointers
+Because pointers are just memory addresses (or arrows to somewhere), they are somewhat weakly
+typed. A pointer to an XML document is the same size as a pointer to an integer. The compiler lets
+you easily cast any pointer type to any other pointer type using a C-­style cast:
+Document* documentPtr { getDocument() };
+char* myCharPtr { (char*)documentPtr };
+Of course, using the resulting pointer can result in catastrophic run-­time errors. A static cast offers a
+bit more safety. The compiler refuses to perform a static cast on pointers to unrelated data types:
+Document* documentPtr { getDocument() };
+char* myCharPtr { static_cast<char*>(documentPtr) };// BUG! Won't compile
