@@ -62,3 +62,6 @@ Of course, using the resulting pointer can result in catastrophic run-­time err
 bit more safety. The compiler refuses to perform a static cast on pointers to unrelated data types:
 Document* documentPtr { getDocument() };
 char* myCharPtr { static_cast<char*>(documentPtr) };// BUG! Won't compile
+
+
+Instead of passing a C-­style array directly to a function, it is recommended for the function to have a parameter of type std::span, “Standard Library Containers.” span wraps a pointer to an array and its size!
