@@ -181,3 +181,7 @@ mySimpleSmartPtr-­>go();
 }
 This code uses make_unique(), in combination with the auto keyword, so that you only have to specify the type of the pointer, Simple in this case, once. This is the recommended way to cre-
 ate a unique_ptr. If the Simple constructor requires parameters, you pass them as arguments to make_unique().
+
+Class template argument deduction (CTAD) can often be used to let the compiler deduce the template type arguments for class templates based on the arguments passed
+to a constructor of the class template. For example, it allows you to write vector v{1,2} instead of vector<int> v{1,2}. CTAD does not work with unique_ptr, so you cannot omit the template
+type argument.
