@@ -100,3 +100,8 @@ The following three versions are identical:
 void doubleInts(int* theArray, size_t size);
 void doubleInts(int theArray[], size_t size);
 void doubleInts(int theArray[2], size_t size);
+
+
+For now, it is enough to know that wide strings support Unicode characters to represent, for example, Japanese strings. The wchar_t type is a character type that can accommodate such Unicode characters, and it is usually
+bigger than a char; i.e., it’s more than one byte. To tell the compiler that a string literal is a wide-­string literal, prefix it with an L. For example, suppose you have the following wide string:
+const wchar_t* myString { L"Hello, World" };
