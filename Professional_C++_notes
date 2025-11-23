@@ -25,3 +25,6 @@ delete [] myArray;
 // Delete first dimension
 myArray = nullptr;
 }
+
+In new code, you should use the C++ Standard Library containers such as std::array and vector. For example, use vector<T> for a one-­dimensional dynamic array. For a two-­dimensional dynamic array, you could use
+vector<vector<T>>, and similar for higher dimensions.
