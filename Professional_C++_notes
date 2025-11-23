@@ -1,0 +1,27 @@
+The following function properly allocates memory for a two-­dimensional array:
+
+char** allocateCharacterBoard(size_t xDimension, size_t yDimension)
+{
+char** myArray { new char*[xDimension] }; // Allocate first dimension
+for (size_t i { 0 }; i < xDimension; ++i) {
+myArray[i] = new char[yDimension];
+// Allocate ith subarray
+}
+return myArray;
+}
+
+
+Similarly, when you want to release the memory associated with a multidimensional free store-­based
+array, the array delete[] syntax will not clean up the subarrays on your behalf. Your code to release
+an array should mirror the code to allocate it, as in the following function:
+void releaseCharacterBoard(char**& myArray, size_t xDimension)
+{
+for (size_t i { 0 }; i < xDimension; ++i) {
+delete [] myArray[i];
+// Delete ith subarray
+myArray[i] = nullptr;
+}
+delete [] myArray;
+// Delete first dimension
+myArray = nullptr;
+}
