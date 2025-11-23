@@ -65,3 +65,38 @@ char* myCharPtr { static_cast<char*>(documentPtr) };// BUG! Won't compile
 
 
 Instead of passing a C-­style array directly to a function, it is recommended for the function to have a parameter of type std::span, “Standard Library Containers.” span wraps a pointer to an array and its size!
+
+
+void doubleInts(int* theArray, size_t size)
+{
+for (size_t i { 0 }; i < size; ++i) { theArray[i] *= 2; }
+}
+The caller of this function can pass a stack-­based or free store-­based array. In the case of a free store-­ based array, the pointer already exists and is passed by value into the function. In the case of a stack-­
+based array, the caller can pass the array variable, and the compiler automatically treats the array variable as a pointer to the array, or you can explicitly pass the address of the first element. All three
+forms are shown here:
+size_t arrSize { 4 };
+int* freeStoreArray { new int[arrSize]{ 1, 5, 3, 4 } };
+doubleInts(freeStoreArray, arrSize);
+delete [] freeStoreArray;
+freeStoreArray = nullptr;
+int stackArray[] { 5, 7, 9, 11 };
+arrSize = std::size(stackArray);
+// Since C++17, requires <array>
+//arrSize = sizeof(stackArray) / sizeof(stackArray[0]); // Pre-­
+C++17, see Ch1
+doubleInts(stackArray, arrSize);
+doubleInts(&stackArray[0], arrSize);
+
+The parameter-­passing semantics of arrays is uncannily similar to that of pointers, because the compiler treats an array as a pointer when it is passed to a function. A function that takes an array as
+an argument and changes values inside the array is actually changing the original array, not a copy. Just like a pointer, passing an array effectively mimics pass-­by-­reference functionality because what
+you really pass to the function is the address of the original array, not a copy. The following implementation of doubleInts() changes the original array even though the parameter is an array, not
+a pointer:
+void doubleInts(int theArray[], size_t size)
+{
+for (size_t i { 0 }; i < size; ++i) { theArray[i] *= 2; }
+}
+Any number between the square brackets after theArray in the function prototype is simply ignored.
+The following three versions are identical:
+void doubleInts(int* theArray, size_t size);
+void doubleInts(int theArray[], size_t size);
+void doubleInts(int theArray[2], size_t size);
