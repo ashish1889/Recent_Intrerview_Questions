@@ -185,3 +185,12 @@ ate a unique_ptr. If the Simple constructor requires parameters, you pass them a
 Class template argument deduction (CTAD) can often be used to let the compiler deduce the template type arguments for class templates based on the arguments passed
 to a constructor of the class template. For example, it allows you to write vector v{1,2} instead of vector<int> v{1,2}. CTAD does not work with unique_ptr, so you cannot omit the template
 type argument.
+
+
+Before C++17, you had to use make_unique() not only because it meant specifying the type only once, but also because of safety reasons! Consider the following call to a function called foo():
+foo(unique_ptr<Simple> { new Simple{} }, unique_ptr<Bar> { new Bar { data() } });
+If the constructor of Simple or Bar, or the data() function, throws an exception, depending on your compiler optimizations, it was possible that either a Simple or a Bar object would be leaked. 
+With make_unique(), nothing would leak:
+foo(make_unique<Simple>(), make_unique<Bar>(data()))
+Since C++17, both calls to foo() are safe, but I still recommend using make_unique() as it results in code that is easier to read.
+Always use make_unique() to create a unique_ptr.
