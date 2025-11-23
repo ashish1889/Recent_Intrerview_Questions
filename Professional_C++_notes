@@ -252,3 +252,45 @@ unique_ptr<int> m_data;
 };
 auto myIntSmartPtr { make_unique<int>(42) };
 Foo f { move(myIntSmartPtr) };
+
+Custom deleters-
+
+Suppose you have a C library that requires you to use my_alloc() for allocation and my_free() for deallocation:
+int* my_alloc(int value) { return new int { value }; }
+void my_free(int* p) { delete p; }
+To properly call my_free() on an allocated resource at the right time, you can use a unique_ptr with a customer deleter:
+unique_ptr<int, decltype(&my_free)> myIntSmartPtr { my_alloc(42), my_free };
+
+This code allocates memory for an integer with my_alloc(), and the unique_ptr deallocates the memory by calling the my_free() function. This feature of unique_ptr is also useful to manage
+other resources instead of just memory. For example, it can be used to automatically close a file or network socket or anything when the unique_ptr goes out of scope.
+
+decltype is a C++ keyword and type trait operator used to obtain the precise, static type of an expression at compile time. 
+It is particularly useful in generic programming (templates) where the types involved might not be known explicitly by the programmer, or when the return type of a 
+function depends on its arguments. 
+
+Key Use Cases
+Determining the type of an expression:
+
+int x = 5;
+decltype(x) y; // y is an int, just like x
+
+Using it within templates (Generic Code):
+
+template <typename T1, typename T2>
+auto compose(T1 t1, T2 t2) -> decltype(t1 + t2) {
+    return t1 + t2;
+}
+// The return type is exactly the type that results from adding t1 and t2.
+
+This specific usage is called a "trailing return type" and is very common in modern C++.
+
+Specifying custom deleters for smart pointers: As seen in your original example:
+
+unique_ptr<int, decltype(&my_free)> myIntSmartPtr { my_alloc(42), my_free };
+
+Here, decltype(&my_free) ensures the unique_ptr template is instantiated with the correct function pointer type required to call my_free during cleanup. 
+decltype vs. auto
+auto is generally used to infer the type of a variable being initialized, often stripping away references and const/volatile qualifiers (decaying the type).
+decltype gives you the exact type of the expression, including references (&) and const qualifiers, which is crucial for perfect forwarding and precise type manipulation in advanced C++. 
+In essence, decltype allows the compiler to figure out complex types for you, making code cleaner and less error-prone.
+
