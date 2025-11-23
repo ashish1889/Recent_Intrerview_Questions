@@ -167,3 +167,6 @@ delete mySimplePtr;
 }
 This function dynamically allocates a Simple object, uses the object, and then properly calls delete. However, you can still have memory leaks in this example! 
 If the go() member function throws an exception, the call to delete is never executed, causing a memory leak.
+
+unique_ptr is a generic smart pointer that can point to any kind of memory. That’s why it is a class template, and make_unique() a function template. 
+Both require a template parameter between angle brackets, < >, specifying the type of memory you want the unique_ptr to point to.
