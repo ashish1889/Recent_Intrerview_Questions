@@ -218,3 +218,16 @@ Simple* simple { mySimpleSmartPtr.release() }; // Release ownership
 delete simple;
 simple = nullptr;
 Because a unique_ptr represents unique ownership, it cannot be copied! But, spoiler alert, it is possible to move one unique_ptr to another one using move semantics
+
+
+As a sneak preview, the std::move() utility function can be used to explicitly move ownership of a unique_ptr, as in the following code snippet.
+
+class Foo
+{
+public:
+Foo(unique_ptr<int> data) : m_data { move(data) } { }
+private:
+unique_ptr<int> m_data;
+};
+auto myIntSmartPtr { make_unique<int>(42) };
+Foo f { move(myIntSmartPtr) };
