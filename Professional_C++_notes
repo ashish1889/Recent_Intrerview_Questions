@@ -150,3 +150,8 @@ Portability	                                        Can lead to issues on differ
 
 
 It is strongly recommended to use std::vector, array, string,smart pointers and other modern C++ constructs to avoid memory leaks.
+
+Your default smart pointer should be unique_ptr. Use shared_ptr only when you really need to share the resource.
+Never assign the result of a resource allocation to a raw pointer! Whatever resource allocation method you use, always immediately store the
+resource pointer in a smart pointer, either unique_ptr or shared_ptr, or use other RAII classes. RAII stands for Resource Acquisition Is Initialization. An RAII class takes ownership 
+of a certain resource and handles its deallocation at the right time.
