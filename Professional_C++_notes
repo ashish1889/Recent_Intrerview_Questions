@@ -155,3 +155,15 @@ Your default smart pointer should be unique_ptr. Use shared_ptr only when you re
 Never assign the result of a resource allocation to a raw pointer! Whatever resource allocation method you use, always immediately store the
 resource pointer in a smart pointer, either unique_ptr or shared_ptr, or use other RAII classes. RAII stands for Resource Acquisition Is Initialization. An RAII class takes ownership 
 of a certain resource and handles its deallocation at the right time.
+
+
+
+void couldBeLeaky()
+{
+Simple* mySimplePtr { new Simple{} };
+mySimplePtr-­
+>go();
+delete mySimplePtr;
+}
+This function dynamically allocates a Simple object, uses the object, and then properly calls delete. However, you can still have memory leaks in this example! 
+If the go() member function throws an exception, the call to delete is never executed, causing a memory leak.
