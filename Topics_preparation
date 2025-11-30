@@ -17,6 +17,9 @@ Here are the main types of IPC used in Android (AOSP) 👇
 🔹 ContentProvider — For structured data sharing across apps, backed by Binder.
 🔹 System V IPC & FIFO — Legacy Linux mechanisms still used in some vendor components.
 
+Embedded courses-
+https://www.reddit.com/r/embedded/comments/155iggw/online_embedded_systems_course/
+
 To delete-
 
 
