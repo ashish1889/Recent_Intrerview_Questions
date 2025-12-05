@@ -182,3 +182,49 @@ Resources
 
 cppreference.com: https://en.cppreference.com/w/cpp/thread/jthread
 C++20 jthread explained: https://www.ibm.com/developerworks/library/cpp-jthread/
+
+
+======================================================================================================================
+
+Spreadsheet::Spreadsheet(size_t width, size_t height)
+: m_width { width }, m_height { height }
+{
+m_cells = new SpreadsheetCell*[m_width];
+for (size_t i { 0 }; i < m_width; ++i) {
+m_cells[i] = new SpreadsheetCell[m_height];
+}
+}
+
+
+Spreadsheet::Spreadsheet(size_t width, size_t height) ==>
+Function Signature: This is the definition of the constructor for the Spreadsheet class. It accepts two arguments: width
+and height, both of type size_t (an unsigned integer type used for sizes and array indices).
+
+: m_width { width }, m_height { height } ==>
+Initializer List: This is the initializer list. It efficiently initializes the member variables m_width and m_height with
+the values passed into the constructor parameters width and height, respectively. This happens before the body of the
+constructor executes.
+
+m_cells = new SpreadsheetCell*[m_width]; ==>
+Allocate Outer Array (Array of Pointers): The code dynamically allocates an array of pointers. m_cells is assumed to be
+a member variable of type SpreadsheetCell**. new SpreadsheetCell*[m_width] creates an array capable of holding width
+pointers to SpreadsheetCell objects. Conceptually, this is the first dimension of the 2D grid (the rows).
+
+m_cells[i] = new SpreadsheetCell[m_height]; ==>
+Allocate Inner Arrays (The Rows): Inside the loop, for each pointer in the outer array (m_cells[i]), a new array of 
+SpreadsheetCell objects is dynamically allocated. This array has a size of height. This creates the second dimension of
+the grid (the columns for that specific row).
+
+Key Takeaway on Memory Management
+This specific implementation uses C-style raw pointers and manual dynamic memory allocation (new). 
+Important Note: When using new in a constructor, you must implement a corresponding destructor (~Spreadsheet()) to 
+deallocate this memory using delete[] correctly, or else your program will suffer from memory leaks. Modern C++ practice
+would typically use std::vector of std::vector or smart pointers to manage memory automatically
+
+
+
+
+
+
+
+
