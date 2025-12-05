@@ -229,6 +229,9 @@ int a { 4 * 2 };
 In this statement, a is an lvalue, it has a name, and you can take the address of it with &a. The result
 of the expression 4*2, on the other hand, is an rvalue. It is a temporary value that is destroyed when the statement finishes execution. 
 In this example, a copy of this temporary value is stored in the variable with name a
+If a function returns something by value, the result of calling that function is an rvalue, a temporary.
+If the function returns a reference-­to-­non-­const, then the result of calling the function is an lvalue, as
+you will be able to use the result on the left-­hand side of an assignment.
 
 
 
