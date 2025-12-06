@@ -261,6 +261,15 @@ handleMessage(a + b);  // Calls handleMessage(string&& value)
 The handleMessage() function accepting an lvalue reference cannot be used, because the expression a + b results in a temporary, which is not an lvalue. In this case, the rvalue 
 reference overload is called. Because the argument is a temporary, any changes handleMessage() does through its reference parameter will be lost after the call returns.
 
+======================================================================================================================================================================================
+For example, suppose you add the following function with an rvalue reference parameter:
+void helper(string&& message) { }
+Calling it as follows does not compile:
+void handleMessage(string&& message) { helper(message); }
+The helper() function needs an rvalue reference, while handleMessage() passes message, which has a name, so it’s an lvalue, causing a compilation error. 
+Here is the correct way using std::move():
+void handleMessage(string&& message) { helper(std::move(message)); }
+
 
 
 
