@@ -254,6 +254,13 @@ You can also call handleMessage() with an expression as an argument:
 string b { "World" };
 handleMessage(a + b); // Calls handleMessage(string&& value)
 
+Because a is a named variable, the handleMessage() function accepting an lvalue reference is called. Any changes handleMessage() does through its reference parameter will change the value of a.
+You can also call handleMessage() with an expression as an argument:
+string b { "World" };
+handleMessage(a + b);  // Calls handleMessage(string&& value)
+The handleMessage() function accepting an lvalue reference cannot be used, because the expression a + b results in a temporary, which is not an lvalue. In this case, the rvalue 
+reference overload is called. Because the argument is a temporary, any changes handleMessage() does through its reference parameter will be lost after the call returns.
+
 
 
 
