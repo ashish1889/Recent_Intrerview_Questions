@@ -269,7 +269,19 @@ void handleMessage(string&& message) { helper(message); }
 The helper() function needs an rvalue reference, while handleMessage() passes message, which has a name, so it’s an lvalue, causing a compilation error. 
 Here is the correct way using std::move():
 void handleMessage(string&& message) { helper(std::move(message)); }
+===================================================================================================================================================================================
 
+Rvalue references are not limited to parameters of functions. You can declare a variable of an rvalue
+reference type and assign to it, although this usage is uncommon. Consider the following code, which
+is illegal in C++:
+int& i { 2 };  // Invalid: reference to a constant
+int a { 2 }, b { 3 };
+int& j { a + b };  // Invalid: reference to a temporary
+Using rvalue references, the following is perfectly legal:
+int&& i { 2 };
+int a { 2 }, b { 3 };
+int&& j { a + b };
+However, such stand-­alone rvalue references are rarely used in this way.
 
 
 
