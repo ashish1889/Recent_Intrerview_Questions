@@ -233,6 +233,26 @@ If a function returns something by value, the result of calling that function is
 If the function returns a reference-­to-­non-­const, then the result of calling the function is an lvalue, as
 you will be able to use the result on the left-­hand side of an assignment.
 
+======================================================================================================================================================
+
+A function can specify an rvalue reference parameter by using && as part of the parameter specification, for example, type&& name. Normally, a temporary object will be seen as a const type&,
+but when there is a function overload that uses an rvalue reference, a temporary object can be resolved to that overload. The following example demonstrates this. The code first defines two
+handleMessage() functions, one accepting an lvalue reference and one accepting an rvalue reference:
+void handleMessage(string& message) // lvalue reference parameter
+{
+println("handleMessage with lvalue reference: {}", message);
+}
+void handleMessage(string&& message) // rvalue reference parameter
+{
+println("handleMessage with rvalue reference: {}", message);
+}
+You can call handleMessage() with a named variable as an argument:
+string a { "Hello " };
+handleMessage(a);    // Calls handleMessage(string& value)
+Because a is a named variable, the handleMessage() function accepting an lvalue reference is called. Any changes handleMessage() does through its reference parameter will change the value of a.
+You can also call handleMessage() with an expression as an argument:
+string b { "World" };
+handleMessage(a + b); // Calls handleMessage(string&& value)
 
 
 
