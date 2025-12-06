@@ -300,6 +300,35 @@ handleMessage(auto { value });
 This makes a temporary copy of object value as an rvalue and passes that rvalue to handleMessage(). If handleMessage() moves from the copy, the original object, value, is retained
 and not impacted
 
+===============================================================================================================================================================================================
+
+Using std::exchange
+You can use std::exchange(), defined in <utility>, to replace a value with a new value and return the old value, as in this example:
+int a { 11 };
+int b { 22 };
+println("Before exchange(): a = {}, b = {}", a, b);
+int returnedValue { exchange(a, b) };
+println("After exchange(): a = {}, b = {}", a, b);
+println("exchange() returned: {}", returnedValue);
+The output is as follows:
+Before exchange(): a = 11, b = 22
+After exchange(): a = 22, b = 22
+exchange() returned: 11
+
+Moving Object Data Members
+The moveFrom() member function uses direct assignments of the three data members because they are primitive types. If your object contains other objects as data members, then you should move
+these objects using std::move(). Suppose the Spreadsheet class has an std::string data member called m_name. The moveFrom() member function should then be implemented as follows:
+void Spreadsheet::moveFrom(Spreadsheet& src) noexcept
+{
+// Move object data members
+m_name = std::move(src.m_name);
+// Move primitives:
+m_width = exchange(src.m_width, 0);
+m_height = exchange(src.m_height, 0);
+m_cells = exchange(src.m_cells, nullptr);
+}
+=================================================================================================================================================================================================
+
 
 
 
