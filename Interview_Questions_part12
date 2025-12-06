@@ -283,6 +283,23 @@ int a { 2 }, b { 3 };
 int&& j { a + b };
 However, such stand-­alone rvalue references are rarely used in this way.
 
+==========================================================================================================================================================================================
+
+Decay Copy
+If you have an object x, writing “auto y{x}” creates a copy of x and gives it a name y; thus, it is an lvalue.
+C++23 introduces the auto(x) or auto{x} syntax to create a copy of an object x as an rvalue, not an lvalue.
+As an example, assume you have only the rvalue reference handleMessage(string&&) function from the previous section, not the lvalue reference overload. You know that the 
+following won’t work in that case:
+string value { "Hello " };
+handleMessage(value); // Error
+You could use std::move(), as in:
+handleMessage(std::move(value));
+But, after this operation, you should not use the value object any longer, as it might have been moved.
+Using C++23 decay-­copy syntax, you can write:
+handleMessage(auto { value });
+This makes a temporary copy of object value as an rvalue and passes that rvalue to handleMessage(). If handleMessage() moves from the copy, the original object, value, is retained
+and not impacted
+
 
 
 
